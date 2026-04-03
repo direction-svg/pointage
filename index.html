@@ -2127,10 +2127,10 @@ function renderEmp(){
     <td><div class="ename">${e.name}${isNew(e.id)?'<span class="new-tag">NOUVEAU</span>':''}</div><div class="eid">${e.id}</div></td>
     <td><span class="db db-${e.dept}">${e.dept}</span></td>
     <td style="font-weight:500;text-align:center">${e.presents}</td>
-    <td style="text-align:center;background:${(e.absDepart+e.absArrivee)>0?'#f5f3ff':''};color:${(e.absDepart+e.absArrivee)>5?'#6d28d9':(e.absDepart+e.absArrivee)>0?'#7c3aed':'inherit'};font-weight:${(e.absDepart+e.absArrivee)>0?600:400}">${e.absDepart+e.absArrivee}</td>
     <td style="text-align:center;background:${e.absAucun>0?'#fff1f2':''};color:${e.absAucun>3?'#881337':e.absAucun>0?'#b91c1c':'inherit'};font-weight:${e.absAucun>0?600:400}">${e.absAucun}</td>
     <td style="text-align:center;background:${e.absDepart>0?'#f5f3ff':''};color:${e.absDepart>3?'#4c1d95':e.absDepart>0?'#7c3aed':'inherit'};font-weight:${e.absDepart>0?600:400}">${e.absDepart}</td>
     <td style="text-align:center;background:${e.absArrivee>0?'#fffbeb':''};color:${e.absArrivee>2?'#78350f':e.absArrivee>0?'#b45309':'inherit'};font-weight:${e.absArrivee>0?600:400}">${e.absArrivee}</td>
+    <td style="text-align:center;background:${(e.absDepart+e.absArrivee)>0?'#f5f3ff':''};color:${(e.absDepart+e.absArrivee)>5?'#6d28d9':(e.absDepart+e.absArrivee)>0?'#7c3aed':'inherit'};font-weight:${(e.absDepart+e.absArrivee)>0?600:400}">${e.absDepart+e.absArrivee}</td>
     <td style="text-align:center;color:${e.retards>=5?'#b91c1c':e.retards>=2?'#b45309':'inherit'};font-weight:${e.retards>=2?600:400}">${e.retards}</td>
     <td style="text-align:center">${e.h_retard}h</td>
     <td style="text-align:center">${e.h_travail}h</td>
@@ -3052,8 +3052,8 @@ function renderFsEmp(){
     <td><span class="db db-${e.dept}">${e.dept}</span></td>
     <td style="text-align:center;font-weight:500">${e.presents}</td>
     <td style="text-align:center;background:${e.absAucun>0?'#fff1f2':''};color:${e.absAucun>3?'#881337':e.absAucun>0?'#b91c1c':'inherit'};font-weight:${e.absAucun>0?600:400}">${e.absAucun}</td>
-    <td style="text-align:center;background:${e.absDepart>0?'#f5f3ff':''};color:${e.absDepart>0?'#7c3aed':'inherit'};font-weight:${e.absDepart>0?600:400}">${e.absDepart}</td>
-    <td style="text-align:center;background:${e.absArrivee>0?'#fffbeb':''};color:${e.absArrivee>0?'#b45309':'inherit'};font-weight:${e.absArrivee>0?600:400}">${e.absArrivee}</td>
+    <td style="text-align:center;background:${e.absDepart>0?'#f5f3ff':''};color:${e.absDepart>3?'#4c1d95':e.absDepart>0?'#7c3aed':'inherit'};font-weight:${e.absDepart>0?600:400}">${e.absDepart}</td>
+    <td style="text-align:center;background:${e.absArrivee>0?'#fffbeb':''};color:${e.absArrivee>2?'#78350f':e.absArrivee>0?'#b45309':'inherit'};font-weight:${e.absArrivee>0?600:400}">${e.absArrivee}</td>
     <td style="text-align:center;background:${(e.absDepart+e.absArrivee)>0?'#f5f3ff':''};color:${(e.absDepart+e.absArrivee)>5?'#6d28d9':(e.absDepart+e.absArrivee)>0?'#7c3aed':'inherit'};font-weight:${(e.absDepart+e.absArrivee)>0?600:400}">${e.absDepart+e.absArrivee}</td>
     <td style="text-align:center;color:${e.retards>=5?'#b91c1c':e.retards>=2?'#b45309':'inherit'};font-weight:${e.retards>=2?600:400}">${e.retards}</td>
     <td style="text-align:center">${e.h_retard}h</td>
