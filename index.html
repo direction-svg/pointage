@@ -853,7 +853,8 @@ body.has-fullscreen .tabs { display:none }
 
   <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
     <span id="storageInfoLabel" style="font-size:11px;color:var(--muted)"></span>
-    <button class="btn btn-danger" style="font-size:11px;padding:5px 12px" onclick="clearStorage()">🗑 Effacer toutes les données</button>
+    <button class="btn btn-primary" style="font-size:11px;padding:5px 12px;margin-right:6px" onclick="migrateToSupabase()">☁️ Migrer tout vers Supabase</button>
+    <button class="btn btn-danger" style="font-size:11px;padding:5px 12px" onclick="clearStorage()">🗑 Effacer données locales</button>
   </div>
   <div id="importEmpty" class="empty-state">
     <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><rect width="56" height="56" rx="14" fill="#e2e8f0"/><path d="M18 36l8-10 6 7 4-5 8 8H18z" stroke="#94a3b8" stroke-width="1.5" stroke-linejoin="round"/></svg>
@@ -1492,8 +1493,7 @@ function saveUsers(users){ localStorage.setItem(USERS_KEY, JSON.stringify(users)
 function initDefaultUsers(){
   const users = getUsers();
   if(!users.length){
-    // Créer le compte superadmin par défaut
-    saveUsers([{
+    const defaultAdmin = {
       id:'u_default',
       name:'Administrateur',
       email:'admin@company.com',
@@ -1501,7 +1501,32 @@ function initDefaultUsers(){
       role:'superadmin',
       createdAt: new Date().toISOString(),
       active: true
-    }]);
+    };
+    saveUsers([defaultAdmin]);
+  }
+}
+
+// Initialiser les users depuis Supabase au login
+// Si Supabase a des users → les utiliser, sinon pousser le local
+async function syncUsersWithSB(){
+  try{
+    const sbUsers = await sbReq('GET','users','','?select=*');
+    if(sbUsers && sbUsers.length){
+      // Supabase a des comptes → les utiliser
+      saveUsers(sbUsers);
+      console.log('[SB] Users chargés depuis Supabase:', sbUsers.length);
+    } else {
+      // Supabase vide → pousser les comptes locaux
+      const localUsers = getUsers();
+      if(localUsers.length){
+        for(const u of localUsers){
+          await saveUserToSB(u).catch(()=>{});
+        }
+        console.log('[SB] Users locaux migrés vers Supabase:', localUsers.length);
+      }
+    }
+  }catch(e){
+    console.warn('[SB] syncUsers échoué, fallback local:', e.message);
   }
 }
 
@@ -3548,6 +3573,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
 window.addEventListener('load', async function(){
   // 1. Init users locaux si besoin (fallback)
   initDefaultUsers();
+  // Synchroniser les comptes avec Supabase (avant login)
+  await syncUsersWithSB();
 
   // 2. Vérifier la session
   if(restoreSession()){
@@ -3770,11 +3797,16 @@ function updateAuthUI(){
   if(tabAdmin) tabAdmin.style.display = canDo('admin')?'block':'none';
 }
 
-function doLogin(){
+async function doLogin(){
   const email = document.getElementById('loginEmail').value.trim();
   const pass  = document.getElementById('loginPass').value;
   const err   = document.getElementById('loginError');
   if(!email||!pass){ err.style.display='block'; err.textContent='Veuillez remplir tous les champs.'; return; }
+  // Recharger les users depuis Supabase avant de vérifier
+  try{
+    const sbUsers = await sbReq('GET','users','','?select=*');
+    if(sbUsers && sbUsers.length) saveUsers(sbUsers);
+  }catch(e){ /* fallback local */ }
   if(login(email,pass)){
     err.style.display='none';
     hideLoginScreen();
@@ -3856,7 +3888,10 @@ function createUser(){
     createdAt: new Date().toISOString()
   });
   saveUsers(users);
-  saveUserToSB(users[users.length-1]).catch(e=>console.warn('[SB user]',e.message));
+  // Pousser dans Supabase ET recharger pour que tous voient le nouveau compte
+  saveUserToSB(users[users.length-1]).then(()=>{
+    renderUsersList();
+  }).catch(e=>console.warn('[SB user]',e.message));
   document.getElementById('newUserName').value='';
   document.getElementById('newUserEmail').value='';
   document.getElementById('newUserPass').value='';
@@ -3881,6 +3916,69 @@ function toggleUserActive(id){
   if(u) updateUserInSB(u).catch(e=>console.warn('[SB updateUser]',e.message));
   renderUsersList();
   showSaveConfirm((u?.active?'Compte activé':'Compte désactivé')+' ✓');
+}
+
+
+// ── Migration complète vers Supabase ─────────────────────────
+async function migrateToSupabase(){
+  if(!confirm('Migrer TOUTES les données locales vers Supabase ?\nPointages, employés, congés, terrain, config, comptes utilisateurs.')) return;
+  showLoadingBanner('Migration en cours...');
+  let errors = [];
+  try{
+    // 1. Pointages
+    if(DB.rows.length){
+      showLoadingBanner('Migration : '+DB.rows.length+' pointages...');
+      await savePointagesToSB(DB.rows);
+    }
+    // 2. Employés
+    if(Object.keys(DB.employes).length){
+      showLoadingBanner('Migration : employés...');
+      await saveEmployesToSB();
+    }
+    // 3. Config
+    showLoadingBanner('Migration : paramètres...');
+    await saveConfigToSB();
+    // 4. Congés
+    if(DB.conges.length){
+      showLoadingBanner('Migration : '+DB.conges.length+' congés...');
+      for(const c of DB.conges){
+        await saveCongeToSB(c).catch(e=>errors.push('Congé: '+e.message));
+      }
+    }
+    // 5. Terrain
+    if(DB.terrain.length){
+      showLoadingBanner('Migration : saisies terrain...');
+      for(const t of DB.terrain){
+        await saveTerrainToSB(t).catch(e=>errors.push('Terrain: '+e.message));
+      }
+    }
+    // 6. Fichiers
+    if(DB.fichiers.length){
+      showLoadingBanner('Migration : historique fichiers...');
+      for(const f of DB.fichiers){
+        await saveFichierToSB(f).catch(e=>{});
+      }
+    }
+    // 7. Users
+    const users = getUsers();
+    if(users.length){
+      showLoadingBanner('Migration : comptes utilisateurs...');
+      for(const u of users){
+        await saveUserToSB(u).catch(e=>errors.push('User: '+e.message));
+      }
+    }
+    hideLoadingBanner();
+    if(errors.length){
+      showNotif('⚠️ Migration partielle — '+errors.length+' erreur(s). Vérifiez la console.');
+      console.warn('[Migration] Erreurs:', errors);
+    } else {
+      showSaveConfirm('✅ Migration complète — tout est dans Supabase !');
+    }
+  }catch(e){
+    hideLoadingBanner();
+    console.error('[Migration]',e);
+    showNotif('❌ Erreur migration : '+e.message.slice(0,80));
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
