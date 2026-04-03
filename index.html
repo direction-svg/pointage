@@ -1454,24 +1454,27 @@ async function saveFichierToSB(f){
 
 // Users
 async function saveUserToSB(u){
-  // Mapper les champs JS vers les colonnes Supabase
-  const row = {
-    id:       u.id,
-    name:     u.name,
-    email:    u.email,
-    password: u.password,
-    role:     u.role || 'viewer',
-    active:   u.active !== false
-    // created_at géré par Supabase automatiquement
-  };
-  await sbReq('POST','users',[row]);
+  // Construire un objet STRICTEMENT avec les colonnes Supabase
+  // Ne jamais inclure createdAt ou d'autres champs du localStorage
+  const row = Object.create(null); // objet vide sans prototype
+  row.id       = String(u.id || '');
+  row.name     = String(u.name || '');
+  row.email    = String(u.email || '');
+  row.password = String(u.password || '');
+  row.role     = String(u.role || 'viewer');
+  row.active   = u.active !== false;
+  // Spécifier explicitement les colonnes pour éviter que Supabase rejette
+  await sbReq('POST', 'users?columns=id,name,email,password,role,active', [row]);
 }
 async function updateUserInSB(u){
-  const row = {
-    id:u.id, name:u.name, email:u.email,
-    password:u.password, role:u.role||'viewer', active:u.active!==false
-  };
-  await sbReq('POST','users',[row]);
+  const row = Object.create(null);
+  row.id       = String(u.id || '');
+  row.name     = String(u.name || '');
+  row.email    = String(u.email || '');
+  row.password = String(u.password || '');
+  row.role     = String(u.role || 'viewer');
+  row.active   = u.active !== false;
+  await sbReq('POST', 'users?columns=id,name,email,password,role,active', [row]);
 }
 async function deleteUserFromSB(id){
   await sbReq('DELETE','users','',`?id=eq.${id}`);
@@ -2436,7 +2439,7 @@ function renderAbs(){
     if(DB.employes[r.id]?.validated===false) return false;
     if(r.status!=='Absence') return false;
     if(isJourNonOuvre(r.date)) return false; // Weekend ou jour férié
-    if(isEnConge(r.id, r.date)) return false; // Congé validé → pas une absence
+    if(isEnConge(r.id, r.date)) return false; // Congé validé
     if(q&&!r.name.toLowerCase().includes(q)) return false;
     if(d&&(DB.employes[r.id]?.dept||r.dept)!==d) return false;
     if(t&&absType(r)!==t) return false;  // filtre par type
@@ -2462,7 +2465,7 @@ function renderAbs(){
     return`<tr>
       <td><div class="ename">${r.name}</div><div class="eid">${r.id}</div></td>
       <td><span class="db db-${dept}">${dept}</span></td>
-      <td style="font-family:monospace;font-size:11px">${r.date}</td>
+      <td style="font-family:monospace;font-size:11px">${r.date}${getPeriodeHoraire(r.id,r.date)?` <span title="${(getPeriodeHoraire(r.id,r.date)||{label:""}).label}" style="font-size:9px;background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:4px;vertical-align:middle">📆</span>`:''}</td>
       <td>${absTypeLbl(r)}</td>
       <td style="font-weight:500;color:${r.checkin&&r.checkin!=='-'?'#15803d':'#b91c1c'}">${r.checkin&&r.checkin!=='-'?r.checkin:'✗ absent'}</td>
       <td style="color:${r.checkout&&r.checkout!=='-'?'#15803d':'#7c3aed'}">${r.checkout&&r.checkout!=='-'?r.checkout:'✗ absent'}</td>
@@ -2531,9 +2534,9 @@ function renderDet(){
     return`<tr>
       <td><div class="ename">${r.name}</div><div class="eid">${r.id}</div></td>
       <td><span class="db db-${dept}">${dept}</span></td>
-      <td style="font-family:monospace;font-size:11px">${r.date}</td>
+      <td style="font-family:monospace;font-size:11px">${r.date}${getPeriodeHoraire(r.id,r.date)?` <span title="${(getPeriodeHoraire(r.id,r.date)||{label:""}).label}" style="font-size:9px;background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:4px;vertical-align:middle">📆</span>`:''}</td>
       <td>${(()=>{
-        const conge=DB.conges.find(c=>c.id===r.id&&r.date>=c.dateFrom&&r.date<=c.dateTo);
+        const conge=DB.conges.find(c=>(c.emp_id||c.id_emp||c.employe_id)===r.id&&r.date>=(c.dateFrom||c.date_from||'')&&r.date<=(c.dateTo||c.date_to||''));
         if(conge){
           const ct=CONGE_TYPES[conge.type]||{lbl:conge.type,cls:'ct-ex'};
           return '<span class="conge-type-badge '+ct.cls+'">🏖 '+ct.lbl+'</span>';
@@ -2546,13 +2549,30 @@ function renderDet(){
         // Absence avec CheckOut → présent avec anomalie arrivée
         if(r.status==='Absence'&&(!r.checkin||r.checkin==='-')&&r.checkout&&r.checkout!=='-')
           return '<span class="sb" style="background:#fef3c7;color:#b45309">⚠️ Anom. arrivée</span>';
+        // Période spéciale active → recalculer le vrai statut avec les horaires de la période
+        // Pendant une période spéciale : recalculer le statut réel
+        if(getPeriodeHoraire(r.id, r.date)){
+          const _late  = calcLateEffective(r.id, r.date, r.checkin);
+          const _early = calcEarlyEffective(r.id, r.date, r.checkout);
+          if(_late>0 && _early>0) return stBadge('Late/Early');
+          if(_late>0)  return stBadge('Late');
+          if(_early>0) return stBadge('Early');
+          return stBadge('Normal');
+        }
         return stBadge(r.status);
       })()}</td>
       <td style="font-weight:500;color:${r.checkin&&r.checkin!=='-'?'#15803d':'#b91c1c'}">${r.checkin&&r.checkin!=='-'?r.checkin:'✗ absent'}</td>
       <td style="color:${r.checkout&&r.checkout!=='-'?'#15803d':'#7c3aed'}">${r.checkout&&r.checkout!=='-'?r.checkout:'✗ absent'}</td>
-      <td style="color:${calcLateEffective(r.id,r.date,r.checkin)>0?'#b91c1c':'#94a3b8'}">${calcLateEffective(r.id,r.date,r.checkin)>0?calcLateEffective(r.id,r.date,r.checkin)+' min':'—'}</td>
-      <td style="color:${calcEarlyEffective(r.id,r.date,r.checkout)>0?'#b45309':'#94a3b8'}">${calcEarlyEffective(r.id,r.date,r.checkout)>0?calcEarlyEffective(r.id,r.date,r.checkout)+' min':'—'}</td>
-      <td>${calcWorkedMin(r.id,r.date,r.checkin,r.checkout)>0?calcWorkedMin(r.id,r.date,r.checkin,r.checkout)+' min':'—'}</td>
+      ${(()=>{
+        const _l=calcLateEffective(r.id,r.date,r.checkin);
+        const _e=calcEarlyEffective(r.id,r.date,r.checkout);
+        const _w=calcWorkedMin(r.id,r.date,r.checkin,r.checkout);
+        const _pp=getPeriodeHoraire(r.id,r.date);
+        const _title=_pp?('title="'+(_pp.label||'')+'  '+(_pp.start||'')+'→'+(_pp.end||'')+'"'):'';
+        return '<td style="color:'+(_l>0?'#b91c1c':'#94a3b8')+'" '+_title+'>'+(_l>0?_l+' min':'—')+'</td>'
+          +'<td style="color:'+(_e>0?'#b45309':'#94a3b8')+'">'+(_e>0?_e+' min':'—')+'</td>'
+          +'<td '+_title+'>'+(_w>0?_w+' min':'—')+'</td>';
+      })()}
       <td>${terrCell}</td>
     </tr>`;
   }).join('');
@@ -2962,8 +2982,10 @@ function timeToMin(t){
   return p[0]*60+(p[1]||0);
 }
 
-// Heure de début de shift en minutes (personnalisé ou 08:00)
-function getShiftStartMin(id){
+// Heure de début de shift en minutes (période spéciale > individuel > standard)
+function getShiftStartMin(id, dateStr){
+  const p = getPeriodeHoraire(id, dateStr);
+  if(p) return timeToMin(p.start||'08:00');
   if(CFG.schedules[id]) return timeToMin(CFG.schedules[id].start||'08:00');
   return timeToMin('08:00');
 }
@@ -3364,7 +3386,7 @@ function renderFsAbs(){
     return`<tr>
       <td><div class="ename">${r.name}</div><div class="eid">${r.id}</div></td>
       <td><span class="db db-${dept}">${dept}</span></td>
-      <td style="font-family:monospace;font-size:11px">${r.date}</td>
+      <td style="font-family:monospace;font-size:11px">${r.date}${getPeriodeHoraire(r.id,r.date)?` <span title="${(getPeriodeHoraire(r.id,r.date)||{label:""}).label}" style="font-size:9px;background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:4px;vertical-align:middle">📆</span>`:''}</td>
       <td>${absTypeLbl(r)}</td>
       <td style="color:${r.checkin&&r.checkin!=='-'?'#15803d':'#b91c1c'}">${r.checkin&&r.checkin!=='-'?r.checkin:'✗ absent'}</td>
       <td style="color:${r.checkout&&r.checkout!=='-'?'#15803d':'#7c3aed'}">${r.checkout&&r.checkout!=='-'?r.checkout:'✗ absent'}</td>
@@ -3397,9 +3419,9 @@ function renderFsDet(){
     return`<tr>
       <td><div class="ename">${r.name}</div><div class="eid">${r.id}</div></td>
       <td><span class="db db-${dept}">${dept}</span></td>
-      <td style="font-family:monospace;font-size:11px">${r.date}</td>
+      <td style="font-family:monospace;font-size:11px">${r.date}${getPeriodeHoraire(r.id,r.date)?` <span title="${(getPeriodeHoraire(r.id,r.date)||{label:""}).label}" style="font-size:9px;background:#dbeafe;color:#1d4ed8;padding:1px 5px;border-radius:4px;vertical-align:middle">📆</span>`:''}</td>
       <td>${(()=>{
-        const conge=DB.conges.find(c=>c.id===r.id&&r.date>=c.dateFrom&&r.date<=c.dateTo);
+        const conge=DB.conges.find(c=>(c.emp_id||c.id_emp||c.employe_id)===r.id&&r.date>=(c.dateFrom||c.date_from||'')&&r.date<=(c.dateTo||c.date_to||''));
         if(conge){
           const ct=CONGE_TYPES[conge.type]||{lbl:conge.type,cls:'ct-ex'};
           return '<span class="conge-type-badge '+ct.cls+'">🏖 '+ct.lbl+'</span>';
@@ -3412,13 +3434,30 @@ function renderFsDet(){
         // Absence avec CheckOut → présent avec anomalie arrivée
         if(r.status==='Absence'&&(!r.checkin||r.checkin==='-')&&r.checkout&&r.checkout!=='-')
           return '<span class="sb" style="background:#fef3c7;color:#b45309">⚠️ Anom. arrivée</span>';
+        // Période spéciale active → recalculer le vrai statut avec les horaires de la période
+        // Pendant une période spéciale : recalculer le statut réel
+        if(getPeriodeHoraire(r.id, r.date)){
+          const _late  = calcLateEffective(r.id, r.date, r.checkin);
+          const _early = calcEarlyEffective(r.id, r.date, r.checkout);
+          if(_late>0 && _early>0) return stBadge('Late/Early');
+          if(_late>0)  return stBadge('Late');
+          if(_early>0) return stBadge('Early');
+          return stBadge('Normal');
+        }
         return stBadge(r.status);
       })()}</td>
       <td style="font-weight:500">${r.checkin||'—'}</td>
       <td>${r.checkout||'—'}</td>
-      <td style="color:${calcLateEffective(r.id,r.date,r.checkin)>0?'#b91c1c':'#94a3b8'}">${calcLateEffective(r.id,r.date,r.checkin)>0?calcLateEffective(r.id,r.date,r.checkin)+' min':'—'}</td>
-      <td style="color:${calcEarlyEffective(r.id,r.date,r.checkout)>0?'#b45309':'#94a3b8'}">${calcEarlyEffective(r.id,r.date,r.checkout)>0?calcEarlyEffective(r.id,r.date,r.checkout)+' min':'—'}</td>
-      <td>${calcWorkedMin(r.id,r.date,r.checkin,r.checkout)>0?calcWorkedMin(r.id,r.date,r.checkin,r.checkout)+' min':'—'}</td>
+      ${(()=>{
+        const _l=calcLateEffective(r.id,r.date,r.checkin);
+        const _e=calcEarlyEffective(r.id,r.date,r.checkout);
+        const _w=calcWorkedMin(r.id,r.date,r.checkin,r.checkout);
+        const _pp=getPeriodeHoraire(r.id,r.date);
+        const _title=_pp?('title="'+(_pp.label||'')+'  '+(_pp.start||'')+'→'+(_pp.end||'')+'"'):'';
+        return '<td style="color:'+(_l>0?'#b91c1c':'#94a3b8')+'" '+_title+'>'+(_l>0?_l+' min':'—')+'</td>'
+          +'<td style="color:'+(_e>0?'#b45309':'#94a3b8')+'">'+(_e>0?_e+' min':'—')+'</td>'
+          +'<td '+_title+'>'+(_w>0?_w+' min':'—')+'</td>';
+      })()}
       <td>${terr?'<span class="sb sb-terrain">Terrain ✓</span>':'—'}</td>
     </tr>`;
   }).join('');
@@ -3477,8 +3516,13 @@ function joursOuvresConge(from, to){
 }
 
 // Vérifier si une date est en congé pour un employé donné
-function isEnConge(id, date){
-  return DB.conges.some(c=>c.id===id&&date>=c.dateFrom&&date<=c.dateTo);
+function isEnConge(empId, date){
+  // Vérifier tous les champs possibles pour l'ID employé
+  // (selon le chemin de sauvegarde, le champ peut varier)
+  return DB.conges.some(c=>{
+    const cEmpId = c.emp_id || c.id_emp || c.employe_id;
+    return cEmpId === empId && date >= (c.dateFrom||c.date_from||'') && date <= (c.dateTo||c.date_to||'');
+  });
 }
 
 // Saisie congé
@@ -3495,7 +3539,7 @@ function saveConge(){
   // Supprimer si overlap existant sur mêmes dates
   const idx = DB.conges.findIndex(c=>c.id===id&&c.dateFrom===from&&c.dateTo===to);
   // Ne pas stocker jours (recalculé dynamiquement à l'affichage selon les fériés actifs)
-  const entry = {id, name:emp?.name||id, dept:emp?.dept||'', type, dateFrom:from, dateTo:to, note};
+  const entry = {id:'c_'+Date.now(), emp_id:id, name:emp?.name||id, dept:emp?.dept||'', type, dateFrom:from, dateTo:to, note};
   if(idx>=0) DB.conges[idx]=entry; else DB.conges.push(entry);
   // Vider le formulaire
   document.getElementById('congeFrom').value='';
