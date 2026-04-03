@@ -1,0 +1,3189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Pointage Hikvision — v4 (02/04/2026 22:51)</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#0f1f3d;--blue:#1d4ed8;--blue-lt:#dbeafe;
+  --green:#15803d;--green-lt:#dcfce7;
+  --red:#b91c1c;--red-lt:#fee2e2;
+  --orange:#b45309;--orange-lt:#fef3c7;
+  --purple:#7c3aed;--purple-lt:#ede9fe;
+  --gray:#64748b;--bg:#f0f4f8;--white:#fff;
+  --border:#e2e8f0;--text:#1e293b;--muted:#64748b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* HEADER */
+.hdr{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:300;box-shadow:0 2px 16px rgba(0,0,0,.35)}
+.hlogo{width:34px;height:34px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hlogo svg{width:19px;height:19px}
+.hbrand{margin-left:12px}
+.hbrand h1{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff}
+.hbrand p{font-size:11px;color:#93c5fd;margin-top:1px}
+.hleft{display:flex;align-items:center}
+.hright{display:flex;align-items:center;gap:8px}
+.hbadge{background:rgba(255,255,255,.1);color:#bfdbfe;font-size:11px;padding:3px 10px;border-radius:20px}
+.btn-imp{display:flex;align-items:center;gap:6px;background:var(--blue);color:#fff;border:none;border-radius:9px;padding:7px 14px;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer}
+.btn-imp:hover{background:#1e40af}
+
+/* TABS */
+.tabs{background:var(--white);border-bottom:1px solid var(--border);display:flex;padding:0 1.5rem;overflow-x:auto;gap:0}
+.tab{padding:12px 16px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;flex-shrink:0;transition:all .18s}
+.tab:hover{color:var(--blue)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+/* LAYOUT */
+.content{padding:1.5rem;max-width:1440px;margin:0 auto}
+.page{display:none}
+.page.active{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* CARDS */
+.card{background:var(--white);border-radius:14px;padding:18px;border:1px solid var(--border)}
+.card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-bottom:1.5rem}
+@media(max-width:1400px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:800px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--white);border-radius:12px;padding:14px 16px;border:1px solid var(--border);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.c-blue::before{background:var(--blue)}.kpi.c-red::before{background:var(--red)}
+.kpi.c-orange::before{background:var(--orange)}.kpi.c-green::before{background:var(--green)}
+.kpi.c-navy::before{background:var(--navy)}.kpi.c-purple::before{background:var(--purple)}
+.kpi.c-gray::before{background:var(--gray)}
+.kpi-lbl{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.kpi-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;line-height:1;margin-bottom:3px}
+.kpi.c-blue .kpi-val{color:var(--blue)}.kpi.c-red .kpi-val{color:var(--red)}
+.kpi.c-orange .kpi-val{color:var(--orange)}.kpi.c-green .kpi-val{color:var(--green)}
+.kpi.c-navy .kpi-val{color:var(--navy)}.kpi.c-purple .kpi-val{color:var(--purple)}
+.kpi.c-gray .kpi-val{color:var(--gray)}
+.kpi.c-absence::before{background:#9d174d}.kpi.c-absence .kpi-val{color:#9d174d}
+.kpi.c-depart::before{background:#7c3aed}.kpi.c-depart .kpi-val{color:#7c3aed}
+.kpi.c-arrivee::before{background:#b45309}.kpi.c-arrivee .kpi-val{color:#b45309}
+.kpi-sub{font-size:11px;color:var(--muted)}
+
+/* STATUS BADGES */
+.sb{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.sb::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sb-normal{background:var(--green-lt);color:var(--green)}.sb-normal::before{background:var(--green)}
+.sb-late{background:var(--red-lt);color:var(--red)}.sb-late::before{background:var(--red)}
+.sb-early{background:var(--blue-lt);color:var(--blue)}.sb-early::before{background:var(--blue)}
+.sb-lateearly{background:var(--orange-lt);color:var(--orange)}.sb-lateearly::before{background:var(--orange)}
+.sb-absence{background:#fce7f3;color:#9d174d}.sb-absence::before{background:#ec4899}
+.sb-absence1{background:#f3e8ff;color:#6b21a8}.sb-absence1::before{background:#a855f7}
+.sb-nosh{background:#f1f5f9;color:#475569}.sb-nosh::before{background:#94a3b8}
+.sb-terrain{background:#ecfdf5;color:#065f46}.sb-terrain::before{background:#10b981}
+.sb-critique{background:var(--red-lt);color:var(--red)}.sb-critique::before{background:var(--red)}
+.sb-attention{background:var(--orange-lt);color:var(--orange)}.sb-attention::before{background:var(--orange)}
+.sb-ok{background:var(--green-lt);color:var(--green)}.sb-ok::before{background:var(--green)}
+
+/* DEPT BADGES */
+.db{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
+.db-AOE{background:#dbeafe;color:#1d4ed8}
+.db-GES{background:#dcfce7;color:#15803d}
+.db-GA{background:#fef3c7;color:#b45309}
+
+/* TOOLBAR / TABLE */
+.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.sbox{flex:1;min-width:180px;position:relative}
+.sbox input{width:100%;padding:8px 12px 8px 34px;border:1px solid var(--border);border-radius:9px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);outline:none}
+.sbox input:focus{border-color:var(--blue)}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.fsel{padding:7px 10px;border:1px solid var(--border);border-radius:9px;font-size:12px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);outline:none;cursor:pointer}
+.tw{background:var(--white);border-radius:14px;border:1px solid var(--border);overflow:hidden}
+.tscroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--navy);color:#fff;padding:10px 12px;text-align:left;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f8fafc}
+td{padding:9px 12px;vertical-align:middle}
+.ename{font-weight:500;font-size:12px}.eid{font-size:10px;color:var(--muted);margin-top:1px}
+.taux-c{display:flex;align-items:center;gap:6px}
+.tbar{flex:1;height:5px;border-radius:3px;background:var(--border);overflow:hidden;min-width:40px}
+.tfill{height:100%;border-radius:3px}
+.tnum{font-size:11px;font-weight:500;min-width:32px;text-align:right}
+.pag{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.pbtns{display:flex;gap:4px}
+.pbtn{padding:3px 8px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--white);font-size:11px;font-family:'DM Sans',sans-serif}
+.pbtn:hover{border-color:var(--blue);color:var(--blue)}
+.pbtn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* PERIOD BAR */
+.period-bar{display:flex;gap:6px;margin-bottom:1.2rem;flex-wrap:wrap;align-items:center}
+.period-lbl{font-size:12px;font-weight:500;color:var(--navy)}
+.pbtn-period{padding:5px 12px;border:1px solid var(--border);border-radius:20px;font-size:11px;background:var(--white);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif}
+.pbtn-period:hover,.pbtn-period.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ALERTES */
+.al-list{display:flex;flex-direction:column;gap:6px}
+.al-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--white)}
+.al-rank{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--muted);min-width:24px;text-align:center}
+.al-rank.r1{color:#ef4444}.al-rank.r2{color:#f97316}.al-rank.r3{color:#eab308}
+.al-info{flex:1}.al-name{font-weight:500;font-size:12px}.al-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.al-val{font-family:'Syne',sans-serif;font-size:18px;font-weight:700}
+
+/* DEUX COLONNES */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.5rem}
+@media(max-width:800px){.two-col{grid-template-columns:1fr}}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--white);border-radius:16px;padding:24px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal h2{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.modal p{font-size:12px;color:var(--muted);margin-bottom:18px}
+.modal-form{display:flex;flex-direction:column;gap:12px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:11px;font-weight:500;color:var(--text)}
+.form-group input,.form-group select{padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;color:var(--text)}
+.form-group input:focus,.form-group select:focus{border-color:var(--blue)}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.btn{padding:8px 16px;border-radius:8px;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;border:none}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1e40af}
+.btn-danger{background:var(--red);color:#fff}.btn-danger:hover{background:#991b1b}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}.btn-ghost:hover{background:var(--bg)}
+
+/* VALIDATION NOUVEAUX EMPLOYÉS */
+.new-emp-card{background:var(--green-lt);border:1px solid #86efac;border-radius:12px;padding:14px 16px;margin-bottom:1rem}
+.new-emp-card h3{font-size:13px;font-weight:600;color:var(--green);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.new-emp-list{display:flex;flex-direction:column;gap:8px}
+.new-emp-item{display:flex;align-items:center;gap:10px;background:var(--white);border-radius:8px;padding:10px 12px;border:1px solid #86efac}
+.new-emp-item .info{flex:1}
+.new-emp-item .info strong{font-size:12px;color:var(--text);display:block}
+.new-emp-item .info span{font-size:11px;color:var(--muted)}
+.btn-sm{padding:5px 12px;border-radius:6px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;border:none}
+.btn-sm-ok{background:var(--green);color:#fff}
+.btn-sm-no{background:var(--red-lt);color:var(--red);border:1px solid #fca5a5}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border);border-radius:14px;padding:2.5rem;text-align:center;cursor:pointer;background:var(--white);transition:all .2s;margin-bottom:1rem}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:#f0f7ff}
+.upload-zone svg{display:block;margin:0 auto 10px}
+.upload-zone h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.upload-zone p{font-size:12px;color:var(--muted)}
+.upload-zone small{font-size:11px;color:var(--muted);margin-top:4px;display:block}
+
+/* FICHIERS */
+.file-item{display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:9px 12px;margin-bottom:6px}
+.file-icon{width:30px;height:30px;background:var(--green-lt);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.file-name{font-size:12px;font-weight:500;flex:1}
+.file-meta{font-size:10px;color:var(--muted)}
+.btn-rm{background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;border-radius:5px}
+.btn-rm:hover{background:var(--red-lt);color:var(--red)}
+
+/* TERRAIN SAISIE */
+.terrain-form{background:var(--blue-lt);border:1px solid #93c5fd;border-radius:12px;padding:16px;margin-bottom:1rem}
+.terrain-form h3{font-size:12px;font-weight:600;color:var(--blue);margin-bottom:10px}
+.terrain-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}
+.terrain-row .form-group input{border-color:#93c5fd}
+.terrain-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;margin-left:4px}
+.tb-terrain{background:#d1fae5;color:#065f46}
+
+/* LEGEND */
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.ld{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* NEW TAG */
+.new-tag{background:var(--green-lt);color:var(--green);font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:5px;vertical-align:middle}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:3rem;color:var(--muted)}
+.empty-state svg{margin:0 auto 12px;display:block;opacity:.25}
+.empty-state p{font-size:13px}
+
+
+/* SORTABLE HEADERS */
+thead th.sortable{cursor:pointer;user-select:none;white-space:nowrap;position:relative;padding-right:22px}
+thead th.sortable:hover{background:#1a3560}
+thead th.sortable::after{content:'↕';position:absolute;right:7px;top:50%;transform:translateY(-50%);opacity:.35;font-size:10px}
+thead th.sortable.asc::after{content:'↑';opacity:1}
+thead th.sortable.desc::after{content:'↓';opacity:1}
+thead th.filterable{cursor:pointer;user-select:none;position:relative;padding-right:22px}
+thead th.filterable:hover{background:#1a3560}
+thead th.filterable::after{content:'▾';position:absolute;right:7px;top:50%;transform:translateY(-50%);opacity:.5;font-size:10px}
+thead th.filterable.active::after{content:'▾';opacity:1;color:#93c5fd}
+thead th.filterable.active{color:#93c5fd}
+
+/* DROPDOWN FILTER */
+.col-dropdown{position:absolute;top:100%;left:0;min-width:180px;background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:500;padding:6px;display:none}
+.col-dropdown.open{display:block}
+.col-dropdown input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;margin-bottom:6px;outline:none}
+.col-dropdown input:focus{border-color:var(--blue)}
+.col-dropdown-opts{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.col-opt{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;font-size:12px;cursor:pointer}
+.col-opt:hover{background:var(--bg)}
+.col-opt input[type=checkbox]{accent-color:var(--blue);cursor:pointer}
+.col-dropdown-footer{display:flex;gap:6px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+.col-dropdown-footer button{flex:1;padding:5px;border-radius:6px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid var(--border);background:var(--white)}
+.col-dropdown-footer button.apply{background:var(--blue);color:#fff;border-color:var(--blue)}
+.col-dropdown-footer button.apply:hover{background:#1e40af}
+.col-dropdown-footer button:hover{background:var(--bg)}
+
+
+/* ADMIN */
+.admin-section{background:var(--white);border-radius:14px;border:1px solid var(--border);overflow:hidden;margin-bottom:1.2rem}
+.admin-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg)}
+.admin-section-hdr h3{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--navy)}
+.admin-section-hdr p{font-size:11px;color:var(--muted);margin-top:2px}
+.admin-toolbar{display:flex;gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.admin-bulk{display:flex;gap:6px;margin-left:auto;align-items:center}
+.admin-bulk span{font-size:11px;color:var(--muted)}
+.btn-admin{padding:6px 14px;border-radius:8px;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--white);color:var(--text);transition:all .15s}
+.btn-admin:hover{border-color:var(--blue);color:var(--blue)}
+.btn-admin.danger{border-color:#fca5a5;color:var(--red);background:var(--red-lt)}
+.btn-admin.danger:hover{background:#fecaca}
+.btn-admin.success{border-color:#86efac;color:var(--green);background:var(--green-lt)}
+.btn-admin.success:hover{background:#bbf7d0}
+.btn-admin.disabled{opacity:.4;pointer-events:none}
+.admin-emp-row{display:grid;grid-template-columns:20px 1fr auto auto auto auto;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);transition:background .1s}
+.admin-emp-row:last-child{border-bottom:none}
+.admin-emp-row:hover{background:#f8fafc}
+.admin-emp-row.excluded{opacity:.55;background:#fafafa}
+.admin-emp-row.excluded .ename{text-decoration:line-through;color:var(--muted)}
+.emp-info{min-width:0}
+.emp-dept-sel{padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);outline:none;cursor:pointer}
+.emp-dept-sel:focus{border-color:var(--blue)}
+.excl-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.excl-badge.incl{background:var(--green-lt);color:var(--green)}
+.excl-badge.excl{background:var(--red-lt);color:var(--red)}
+.toggle-monitor{padding:4px 12px;border-radius:6px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.toggle-monitor.incl{background:var(--red-lt);color:var(--red)}
+.toggle-monitor.incl:hover{background:#fecaca}
+.toggle-monitor.excl{background:var(--green-lt);color:var(--green)}
+.toggle-monitor.excl:hover{background:#bbf7d0}
+.admin-stats-bar{display:flex;gap:16px;padding:12px 18px;font-size:12px;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border)}
+.admin-stats-bar strong{color:var(--text)}
+
+
+/* ADMIN SECTIONS EXTRAS */
+.admin-tabs{display:flex;gap:4px;padding:12px 18px 0;border-bottom:1px solid var(--border);background:var(--white)}
+.admin-tab{padding:8px 16px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;border-radius:6px 6px 0 0;transition:all .15s;white-space:nowrap}
+.admin-tab:hover{color:var(--blue)}
+.admin-tab.active{color:var(--blue);border-bottom-color:var(--blue);background:var(--blue-lt)}
+.admin-panel{display:none;padding:18px}
+.admin-panel.active{display:block}
+.setting-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-info{flex:1}
+.setting-info strong{font-size:13px;font-weight:500;color:var(--text);display:block;margin-bottom:2px}
+.setting-info span{font-size:11px;color:var(--muted)}
+.setting-ctrl{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.setting-ctrl input[type=number]{width:70px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;text-align:center;outline:none}
+.setting-ctrl input[type=number]:focus{border-color:var(--blue)}
+.setting-ctrl input[type=time]{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.setting-ctrl input[type=time]:focus{border-color:var(--blue)}
+.setting-ctrl select{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer}
+.setting-ctrl select:focus{border-color:var(--blue)}
+.setting-ctrl label{font-size:12px;color:var(--muted)}
+.setting-unit{font-size:12px;color:var(--muted)}
+.emp-schedule-row{display:grid;grid-template-columns:1fr 110px 110px 110px 110px auto;gap:10px;align-items:center;padding:10px 18px;border-bottom:1px solid var(--border)}
+.emp-schedule-row:last-child{border-bottom:none}
+.emp-schedule-row:hover{background:#f8fafc}
+.emp-schedule-row.custom{background:#f0f7ff}
+.sched-label{font-size:11px;color:var(--muted);text-align:center;font-weight:500}
+.sched-input{padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;width:100%;text-align:center;outline:none}
+.sched-input:focus{border-color:var(--blue)}
+.sched-input.custom-val{border-color:#93c5fd;background:#f0f7ff}
+.btn-reset-sched{background:none;border:1px solid #fca5a5;color:var(--red);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.btn-reset-sched:hover{background:var(--red-lt)}
+.holiday-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:10px}
+.holiday-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--white);font-size:12px}
+.holiday-item input[type=checkbox]{accent-color:var(--blue);width:14px;height:14px;cursor:pointer;flex-shrink:0}
+.holiday-item .hd{flex:1}
+.holiday-item .hd-name{font-weight:500}
+.holiday-item .hd-date{font-size:10px;color:var(--muted)}
+.holiday-custom{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.custom-holiday-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.custom-holiday-tag{display:flex;align-items:center;gap:5px;background:var(--purple-lt);color:var(--purple);font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+.custom-holiday-tag button{background:none;border:none;cursor:pointer;color:var(--purple);padding:0;font-size:13px;line-height:1}
+.btn-save-settings{background:var(--blue);color:#fff;border:none;border-radius:9px;padding:8px 20px;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;margin-top:6px}
+.btn-save-settings:hover{background:#1e40af}
+.save-confirm{font-size:11px;color:var(--green);opacity:0;transition:opacity .3s;margin-left:8px}
+.banner-info{background:var(--blue-lt);border:1px solid #93c5fd;border-radius:10px;padding:10px 14px;font-size:12px;color:#1e40af;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+
+/* MODE PLEINE PAGE SCROLL */
+.page-fullscreen { position:fixed!important;inset:60px 0 0 0;z-index:200;background:var(--bg);overflow-y:auto;padding:1rem 1.5rem;display:none }
+.page-fullscreen.active { display:block!important }
+body.has-fullscreen .content { display:none }
+body.has-fullscreen .tabs { display:none }
+.fullscreen-bar { display:flex;align-items:center;gap:10px;margin-bottom:1rem;background:var(--white);border-radius:12px;padding:10px 16px;border:1px solid var(--border) }
+.fullscreen-bar h2 { font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--navy);flex:1 }
+.btn-exit-fs { display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--white);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--text) }
+.btn-exit-fs:hover { background:var(--bg) }
+.btn-fullpage { display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--border);border-radius:7px;background:var(--white);font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;color:var(--muted);margin-left:auto;white-space:nowrap }
+.btn-fullpage:hover { border-color:var(--blue);color:var(--blue) }
+.btn-fullpage svg { width:13px;height:13px }
+/* Hauteur max des tableaux en mode normal avec scroll interne */
+.tw-scroll { max-height:calc(100vh - 280px);overflow-y:auto }
+.tw-scroll thead th { position:sticky;top:0;z-index:10 }
+
+
+.tabs{top:60px} /* décaler les tabs pour la barre période */
+
+
+/* PÉRIODE SELECT HEADER */
+.hdr-period{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);
+  border-radius:8px;padding:5px 10px}
+.hdr-period label{font-size:11px;color:#93c5fd;white-space:nowrap}
+.hdr-period select{background:transparent;border:none;color:#fff;font-size:12px;
+  font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;
+  padding:2px 4px;min-width:120px}
+.hdr-period select option{background:#1e293b;color:#fff}
+.hdr-period-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;
+  background:#7c3aed;color:#fff;white-space:nowrap;display:none}
+
+
+/* PÉRIODE DANS TABLEAUX */
+.toolbar-period{display:flex;align-items:center;gap:6px;padding:6px 0}
+.period-active-tag{display:inline-flex;align-items:center;gap:5px;background:#ede9fe;
+  color:#7c3aed;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.period-active-tag button{background:none;border:none;color:#7c3aed;cursor:pointer;font-size:13px;
+  line-height:1;padding:0 0 0 3px}
+
+/* CONGÉS */
+.conge-badge{display:inline-flex;align-items:center;gap:4px;background:#ecfdf5;color:#065f46;
+  font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.sb-conge{background:#d1fae5;color:#065f46}
+.sb-conge::before{background:#10b981}
+.conge-form{background:var(--green-lt);border:1px solid #86efac;border-radius:12px;
+  padding:16px;margin-bottom:1rem}
+.conge-form h3{font-size:12px;font-weight:600;color:var(--green);margin-bottom:10px}
+.conge-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;align-items:end}
+@media(max-width:900px){.conge-grid{grid-template-columns:1fr 1fr}}
+.conge-type-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.ct-cp{background:#dbeafe;color:#1d4ed8}
+.ct-css{background:#d1fae5;color:#065f46}
+.ct-am{background:#fef3c7;color:#b45309}
+.ct-sm{background:#fce7f3;color:#9d174d}
+.ct-ex{background:#f3e8ff;color:#7c3aed}
+
+/* DEPT GRID */
+.dept-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem}
+@media(max-width:800px){.dept-grid{grid-template-columns:1fr}}
+.dept-card{background:var(--white);border-radius:14px;padding:16px;border:1px solid var(--border)}
+.dept-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.ds{text-align:center;padding:8px;border-radius:8px;background:var(--bg)}
+.ds-val{font-family:'Syne',sans-serif;font-size:18px;font-weight:700}
+.ds-lbl{font-size:10px;color:var(--muted);margin-top:1px}
+.pbar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:10px}
+.pfill{height:100%;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="globalErrBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;padding:10px 16px;font-size:12px;font-family:monospace;align-items:center;gap:10px">
+  <strong>⚠️ Erreur JS :</strong> <span id="globalErrMsg"></span>
+  <button onclick="this.parentElement.style.display='none'" style="margin-left:auto;background:none;border:1px solid #fff;color:#fff;padding:2px 8px;border-radius:4px;cursor:pointer">×</button>
+</div>
+<div class="hdr">
+  <div class="hleft">
+    <div class="hlogo"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="white" stroke-width="1.5"/><path d="M10 6v4l2.5 2.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+    <div class="hbrand">
+      <h1>Tableau de Bord Pointage</h1>
+      <p id="hSub">Hikvision iVMS-4200 · Aucun fichier</p>
+    </div>
+  </div>
+  <div class="hright">
+    <span class="hbadge" id="hEmp">0 employés</span>
+    <div class="hdr-period">
+      <label for="periodSelect">📅</label>
+      <select id="periodSelect" onchange="onPeriodSelect(this.value)">
+        <option value="">Toute la période</option>
+      </select>
+    </div>
+    <label class="btn-imp">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 3v9M7 9l3 3 3-3M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Importer
+      <input type="file" id="fileIn" accept=".xlsx,.xls" multiple style="display:none" onchange="handleFiles(event)">
+    </label>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showPage('overview',this)">Vue d'ensemble</div>
+  <div class="tab" onclick="showPage('employes',this)">Employés</div>
+  <div class="tab" onclick="showPage('absences',this)">Absences</div>
+  <div class="tab" onclick="showPage('detail',this)">Détail pointages</div>
+  <div class="tab" onclick="showPage('alertes',this)">Alertes</div>
+  <div class="tab" onclick="showPage('terrain',this)">Saisie terrain</div>
+  <div class="tab" onclick="showPage('conges',this)">🏖 Congés</div>
+  <div class="tab" onclick="showPage('import',this)">📂 Fichiers</div>
+  <div class="tab" onclick="showPage('admin',this)">⚙️ Admin</div>
+</div>
+
+<div class="content">
+
+<!-- ══ VUE D'ENSEMBLE ══ -->
+<div class="page active" id="page-overview">
+  <div class="period-bar" id="periodBar"><span class="period-lbl">Période :</span></div>
+  <div class="kpi-grid" id="kpiGrid"></div>
+  <div style="display:grid;grid-template-columns:1fr 1.8fr;gap:14px;margin-bottom:1.5rem">
+    <div class="card">
+      <div class="card-title">Statuts du mois</div>
+      <div class="legend" id="donutLegend"></div>
+      <div style="position:relative;height:200px"><canvas id="chartDonut"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Présences par jour</div>
+      <div style="position:relative;height:220px"><canvas id="chartDaily"></canvas></div>
+    </div>
+  </div>
+  <div class="dept-grid" id="deptGrid"></div>
+</div>
+
+<!-- ══ EMPLOYÉS ══ -->
+<div class="page" id="page-employes">
+  <div class="toolbar">
+    <div class="sbox">
+      <svg class="si" width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="#94a3b8" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="empQ" placeholder="Rechercher…" oninput="renderEmp()">
+    </div>
+    <select class="fsel" id="empDept" onchange="renderEmp()"><option value="">Tous les départements</option></select>
+    <select class="fsel" id="empPeriod" onchange="empPage=0;renderEmp()" title="Filtrer par période">
+      <option value="">Toute la période</option>
+    </select>
+    <select class="fsel" id="empSort" onchange="renderEmp()">
+      <option value="name">Nom A→Z</option>
+      <option value="absences">Absences ↓</option>
+      <option value="retards">Retards ↓</option>
+      <option value="taux">Taux présence ↑</option>
+    </select>
+<select class="fsel" id="empPer" onchange="PER=parseInt(this.value);empPage=0;renderEmp()" title="Lignes par page">
+      <option value="20">20 / page</option>
+      <option value="50">50 / page</option>
+      <option value="100">100 / page</option>
+      <option value="200">200 / page</option>
+      <option value="500">500 / page</option>
+    </select>
+  </div>
+  <div class="tw">
+    <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg);gap:8px">
+      <span style="font-size:11px;color:var(--muted)" id="empTableInfo"></span>
+      <span id="empPeriodTag" style="display:none" class="period-active-tag"></span>
+      <button class="btn-fullpage" onclick="openFullscreen('emp')" title="Afficher en pleine page">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M3 3h5M3 3v5M17 3h-5M17 3v5M3 17h5M3 17v-5M17 17h-5M17 17v-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Pleine page
+      </button>
+    </div>
+    <div class="tscroll tw-scroll"><table>
+      <thead><tr>
+  <th class="sortable" onclick="thSort('emp','name')">Employé</th>
+  <th class="filterable" onclick="thFilter(event,'emp','dept')">Dépt.<div class="col-dropdown" id="fd-emp-dept"></div></th>
+  <th class="sortable" onclick="thSort('emp','presents')">Présences</th>
+  <th class="sortable" onclick="thSort('emp','absTotal')" style="background:#7b1f40">Abs. totales</th>
+  <th class="sortable" onclick="thSort('emp','absAucun')" style="background:#881337">Aucun pointage</th>
+  <th class="sortable" onclick="thSort('emp','absDepart')" style="background:#5b21b6">Départ manquant</th>
+  <th class="sortable" onclick="thSort('emp','absArrivee')" style="background:#92400e">Arrivée manquante</th>
+  <th class="sortable" onclick="thSort('emp','retards')">Retards</th>
+  <th class="sortable" onclick="thSort('emp','h_retard')">H.Retard</th>
+  <th class="sortable" onclick="thSort('emp','h_travail')">H.Travail</th>
+  <th class="sortable" onclick="thSort('emp','conges')">Congés</th>
+  <th class="sortable" onclick="thSort('emp','taux')">Taux prés.</th>
+  <th class="filterable" onclick="thFilter(event,'emp','statut')">Statut<div class="col-dropdown" id="fd-emp-statut"></div></th>
+</tr></thead>
+      <tbody id="empBody"></tbody>
+    </table></div>
+    <div class="pag"><span id="empCount"></span><div class="pbtns" id="empPag"></div></div>
+  </div>
+</div>
+
+<!-- ══ ABSENCES ══ -->
+<div class="page" id="page-absences">
+  <div class="toolbar">
+    <div class="sbox">
+      <svg class="si" width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="#94a3b8" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="absQ" placeholder="Rechercher…" oninput="renderAbs()">
+    </div>
+    <select class="fsel" id="absDept" onchange="renderAbs()"><option value="">Tous</option></select>
+    <select class="fsel" id="absType" onchange="renderAbs()">
+      <option value="">Tous types d'absence</option>
+      <option value="abs-total">Absence totale (aucun pointage)</option>
+      <option value="abs-depart">Départ manquant (arrivée OK)</option>
+      <option value="abs-arrivee">Arrivée manquante (départ OK)</option>
+    </select>
+    <select class="fsel" id="absMonth" onchange="renderAbs()"><option value="">Tous les mois</option></select>
+    <select class="fsel" id="absPer" onchange="PER=parseInt(this.value);absPage=0;renderAbs()" title="Lignes par page">
+      <option value="20">20 / page</option>
+      <option value="50">50 / page</option>
+      <option value="100">100 / page</option>
+      <option value="200">200 / page</option>
+      <option value="500">500 / page</option>
+    </select>
+  </div>
+  <div class="tw">
+    <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg)">
+      <span style="font-size:11px;color:var(--muted)" id="absTableInfo"></span>
+      <button class="btn-fullpage" onclick="openFullscreen('abs')" title="Afficher en pleine page">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M3 3h5M3 3v5M17 3h-5M17 3v5M3 17h5M3 17v-5M17 17h-5M17 17v-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Pleine page
+      </button>
+    </div>
+    <div class="tscroll tw-scroll"><table>
+      <thead><tr>
+  <th class="sortable" onclick="thSort('abs','name')">Employé</th>
+  <th class="filterable" onclick="thFilter(event,'abs','dept')">Dépt.<div class="col-dropdown" id="fd-abs-dept"></div></th>
+  <th class="sortable" onclick="thSort('abs','date')">Date</th>
+  <th class="filterable" onclick="thFilter(event,'abs','absType')" style="background:#7b1f40">Type absence<div class="col-dropdown" id="fd-abs-absType"></div></th>
+  <th style="background:#881337">Pointage arrivée</th>
+  <th style="background:#5b21b6">Pointage départ</th>
+  <th>Justification terrain</th>
+  <th>Actions</th>
+</tr></thead>
+      <tbody id="absBody"></tbody>
+    </table></div>
+    <div class="pag"><span id="absCount"></span><div class="pbtns" id="absPag"></div></div>
+  </div>
+</div>
+
+<!-- ══ DÉTAIL POINTAGES ══ -->
+<div class="page" id="page-detail">
+  <div class="toolbar">
+    <div class="sbox">
+      <svg class="si" width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="#94a3b8" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="detQ" placeholder="Rechercher…" oninput="renderDet()">
+    </div>
+    <select class="fsel" id="detDept" onchange="renderDet()"><option value="">Tous</option></select>
+    <select class="fsel" id="detSt" onchange="renderDet()">
+      <option value="">Tous statuts</option>
+      <option value="Normal">Normal</option>
+      <option value="Late">Retard</option>
+      <option value="Early">Anticipé</option>
+      <option value="Late/Early">Retard + Dép. anticipé</option>
+      <option value="Absence">Absence</option>
+      <option value="No Shift Schedule">Jour de repos</option>
+      <option value="ferie">Jour férié</option>
+    </select>
+    <select class="fsel" id="detMonth" onchange="renderDet()"><option value="">Tous les mois</option></select>
+    <select class="fsel" id="detPer" onchange="PER=parseInt(this.value);detPage=0;renderDet()" title="Lignes par page">
+      <option value="20">20 / page</option>
+      <option value="50">50 / page</option>
+      <option value="100">100 / page</option>
+      <option value="200">200 / page</option>
+      <option value="500">500 / page</option>
+    </select>
+  </div>
+  <div class="tw">
+    <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg)">
+      <span style="font-size:11px;color:var(--muted)" id="detTableInfo"></span>
+      <button class="btn-fullpage" onclick="openFullscreen('det')" title="Afficher en pleine page">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M3 3h5M3 3v5M17 3h-5M17 3v5M3 17h5M3 17v-5M17 17h-5M17 17v-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Pleine page
+      </button>
+    </div>
+    <div class="tscroll tw-scroll"><table>
+      <thead><tr>
+  <th class="sortable" onclick="thSort('det','name')">Employé</th>
+  <th class="filterable" onclick="thFilter(event,'det','dept')">Dépt.<div class="col-dropdown" id="fd-det-dept"></div></th>
+  <th class="sortable" onclick="thSort('det','date')">Date</th>
+  <th class="filterable" onclick="thFilter(event,'det','status')">Statut<div class="col-dropdown" id="fd-det-status"></div></th>
+  <th class="sortable" onclick="thSort('det','checkin')">Check-In</th>
+  <th class="sortable" onclick="thSort('det','checkout')">Check-Out</th>
+  <th class="sortable" onclick="thSort('det','late')">Retard</th>
+  <th class="sortable" onclick="thSort('det','early')">Dép. anticipé</th>
+  <th class="sortable" onclick="thSort('det','worked')">Travaillé</th>
+  <th>Terrain</th>
+</tr></thead>
+      <tbody id="detBody"></tbody>
+    </table></div>
+    <div class="pag"><span id="detCount"></span><div class="pbtns" id="detPag"></div></div>
+  </div>
+</div>
+
+<!-- ══ ALERTES ══ -->
+<div class="page" id="page-alertes">
+  <div class="two-col">
+    <div>
+      <div class="card-title" style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:#b91c1c;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">🔴 Top absences</div>
+      <div class="al-list" id="topAbs"></div>
+    </div>
+    <div>
+      <div class="card-title" style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">⚠️ Top retardataires</div>
+      <div class="al-list" id="topRet"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Classement absences totales (top 12)</div>
+    <div style="position:relative;height:320px"><canvas id="chartRet"></canvas></div>
+  </div>
+</div>
+
+<!-- ══ SAISIE TERRAIN ══ -->
+<div class="page" id="page-terrain">
+  <div class="terrain-form">
+    <h3>📍 Saisie manuelle — Heure de début ou fin hors bureau</h3>
+    <p style="font-size:11px;color:var(--blue);margin-bottom:10px">Pour les employés commençant ou finissant leur journée sur le terrain, saisissez l'heure confirmée par tracking GPS ou responsable.</p>
+    <div class="terrain-row">
+      <div class="form-group">
+        <label>Employé</label>
+        <select class="fsel" id="terrEmp" style="width:100%"><option value="">Sélectionner…</option></select>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="terrDate">
+      </div>
+      <div></div>
+    </div>
+    <div class="terrain-row" style="margin-top:10px">
+      <div class="form-group">
+        <label>Heure début (terrain)</label>
+        <input type="time" id="terrStart" placeholder="08:00">
+      </div>
+      <div class="form-group">
+        <label>Heure fin (terrain)</label>
+        <input type="time" id="terrEnd" placeholder="17:30">
+      </div>
+      <div class="form-group">
+        <label>Confirmé par</label>
+        <select class="fsel" id="terrConf" style="width:100%">
+          <option value="gps">Tracking GPS</option>
+          <option value="responsable">Responsable</option>
+          <option value="rh">RH</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+      <div class="form-group" style="flex:1">
+        <label>Note / commentaire</label>
+        <input type="text" id="terrNote" placeholder="Ex: Chantier Dakar Port, validé par M. Diop">
+      </div>
+      <div style="padding-top:18px">
+        <button class="btn btn-primary" onclick="saveTerrain()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tw">
+    <div class="card-title" style="padding:14px 14px 0;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.07em">Saisies terrain enregistrées</div>
+    <div class="tscroll"><table>
+      <thead><tr><th>Employé</th><th>Dépt.</th><th>Date</th><th>Début terrain</th><th>Fin terrain</th><th>Confirmé par</th><th>Note</th><th></th></tr></thead>
+      <tbody id="terrBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ══ CONGÉS ══ -->
+<div class="page" id="page-conges">
+
+  <!-- Formulaire saisie -->
+  <div class="conge-form">
+    <h3>🏖 Saisir un congé / absence justifiée</h3>
+    <div class="conge-grid">
+      <div class="form-group">
+        <label>Employé</label>
+        <select class="fsel" id="congeEmp" style="width:100%"><option value="">Sélectionner…</option></select>
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select class="fsel" id="congeType" style="width:100%">
+          <option value="CP">Congé payé (CP)</option>
+          <option value="CSS">Congé sans solde (CSS)</option>
+          <option value="AM">Arrêt maladie (AM)</option>
+          <option value="SM">Congé maternité/paternité</option>
+          <option value="EX">Autre absence justifiée</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date début</label>
+        <input type="date" id="congeFrom">
+      </div>
+      <div class="form-group">
+        <label>Date fin</label>
+        <input type="date" id="congeTo">
+      </div>
+      <div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:flex-end">
+      <div class="form-group" style="flex:1">
+        <label>Note / motif</label>
+        <input type="text" id="congeNote" placeholder="Ex: Congé annuel validé par RH…">
+      </div>
+      <button class="btn btn-primary" onclick="saveConge()">Enregistrer</button>
+    </div>
+    <div id="congeCalcInfo" style="margin-top:8px;font-size:11px;color:var(--muted)"></div>
+  </div>
+
+  <!-- Tableau des congés -->
+  <div class="toolbar">
+    <div class="sbox">
+      <svg class="si" width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="#94a3b8" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" id="congeQ" placeholder="Rechercher…" oninput="renderConges()">
+    </div>
+    <select class="fsel" id="congeDept" onchange="renderConges()"><option value="">Tous les depts</option></select>
+    <select class="fsel" id="congeTypeF" onchange="renderConges()">
+      <option value="">Tous types</option>
+      <option value="CP">Congé payé</option>
+      <option value="CSS">Sans solde</option>
+      <option value="AM">Maladie</option>
+      <option value="SM">Maternité/Pat.</option>
+      <option value="EX">Autre justifié</option>
+    </select>
+  </div>
+  <div class="tw">
+    <div class="tscroll tw-scroll"><table>
+      <thead><tr>
+        <th>Employé</th><th>Dépt.</th><th>Type</th>
+        <th>Début</th><th>Fin</th><th>Jours ouvrés</th><th>Note</th><th></th>
+      </tr></thead>
+      <tbody id="congeBody"></tbody>
+    </table></div>
+    <div class="pag"><span id="congeCount"></span></div>
+  </div>
+
+</div>
+
+<!-- ══ IMPORT FICHIERS ══ -->
+<div class="page" id="page-import">
+  <div id="newEmpSection" style="display:none" class="new-emp-card">
+    <h3>✨ Nouveaux employés détectés — validation requise</h3>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--green);cursor:pointer;user-select:none">
+        <input type="checkbox" id="chkAll" onchange="toggleAllEmps(this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:#15803d">
+        Tout sélectionner
+      </label>
+      <span id="selCount" style="font-size:11px;color:var(--muted)">0 sélectionné(s)</span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn-sm btn-sm-ok" id="btnValAll" onclick="validateSelected(true)" style="opacity:.4;padding:6px 14px;pointer-events:none">✓ Valider la sélection</button>
+        <button class="btn-sm btn-sm-no" id="btnRejAll" onclick="validateSelected(false)" style="opacity:.4;padding:6px 14px;pointer-events:none">✗ Rejeter la sélection</button>
+      </div>
+    </div>
+    <div class="new-emp-list" id="newEmpList"></div>
+  </div>
+
+  <label class="upload-zone" id="dropZone" for="fileIn"
+    ondragover="ev(e);this.classList.add('drag')"
+    ondragleave="this.classList.remove('drag')"
+    ondrop="dropFiles(event)">
+    <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+      <rect width="44" height="44" rx="11" fill="#dbeafe"/>
+      <path d="M22 12v14M16 18l6-6 6 6M10 32v2a2 2 0 002 2h20a2 2 0 002-2v-2" stroke="#1d4ed8" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <h3>Glissez vos exports iVMS-4200 ici</h3>
+    <p>ou cliquez pour sélectionner des fichiers</p>
+    <small>Formats : .xlsx, .xls · Plusieurs fichiers simultanément</small>
+  </label>
+
+  <div id="filesList"></div>
+
+  <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <span id="storageInfoLabel" style="font-size:11px;color:var(--muted)"></span>
+    <button class="btn btn-danger" style="font-size:11px;padding:5px 12px" onclick="clearStorage()">🗑 Effacer toutes les données</button>
+  </div>
+  <div id="importEmpty" class="empty-state">
+    <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><rect width="56" height="56" rx="14" fill="#e2e8f0"/><path d="M18 36l8-10 6 7 4-5 8 8H18z" stroke="#94a3b8" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    <p>Aucun fichier chargé.<br>Importez vos exports mensuels Hikvision iVMS-4200.</p>
+  </div>
+</div>
+
+
+<!-- ══ ADMIN ══ -->
+<div class="page" id="page-admin">
+
+  <!-- NAV INTERNE ADMIN -->
+  <div class="admin-section">
+    <div class="admin-tabs">
+      <div class="admin-tab active" onclick="switchAdminTab('monitoring',this)">👥 Monitoring</div>
+      <div class="admin-tab" onclick="switchAdminTab('horaires',this)">🕐 Horaires aménagés</div>
+      <div class="admin-tab" onclick="switchAdminTab('retard',this)">⏱ Tolérance retard</div>
+      <div class="admin-tab" onclick="switchAdminTab('feries',this)">📅 Jours fériés</div>
+    </div>
+
+    <!-- ── PANEL MONITORING ── -->
+    <div class="admin-panel active" id="apanel-monitoring">
+      <div class="admin-toolbar" style="padding:0 0 12px;border-bottom:1px solid var(--border);margin-bottom:12px">
+        <div class="sbox" style="max-width:260px">
+          <svg class="si" width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="#94a3b8" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input type="text" id="adminQ" placeholder="Rechercher un employé…" oninput="renderAdmin()">
+        </div>
+        <select class="fsel" id="adminDept" onchange="renderAdmin()"><option value="">Tous les départements</option></select>
+        <select class="fsel" id="adminFilter" onchange="renderAdmin()">
+          <option value="">Tous</option>
+          <option value="included">Inclus dans le monitoring</option>
+          <option value="excluded">Exclus du monitoring</option>
+        </select>
+        <div class="admin-bulk">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="adminChkAll" onchange="adminToggleAll(this.checked)" style="accent-color:var(--blue);width:14px;height:14px">
+            Tout sél.
+          </label>
+          <span id="adminSelCount" style="font-size:11px;color:var(--muted)">0 sél.</span>
+          <button class="btn-admin success disabled" id="btnAdminIncl" onclick="adminBulkAction(true)">✓ Inclure</button>
+          <button class="btn-admin danger disabled" id="btnAdminExcl" onclick="adminBulkAction(false)">✗ Exclure</button>
+        </div>
+      </div>
+      <div class="admin-stats-bar" id="adminStatsBar" style="margin:0 -18px;padding:10px 18px;margin-bottom:12px"><span>Chargement…</span></div>
+      <div id="adminList"></div>
+    </div>
+
+    <!-- ── PANEL HORAIRES AMÉNAGÉS ── -->
+    <div class="admin-panel" id="apanel-horaires">
+      <div class="banner-info">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#1d4ed8" stroke-width="1.5"/><path d="M10 9v4M10 7h.01" stroke="#1d4ed8" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Définissez des horaires personnalisés par employé si nécessaire. <br><strong>Lun–Jeu</strong> : 08:00→13:00 / 14:30→17:30 (pause 1h30 · <strong>8h/jour</strong>) &nbsp;|&nbsp; <strong>Vendredi</strong> : 08:00→13:00 / 15:00→18:00 (pause 2h · <strong>8h/jour</strong>)
+      </div>
+      <div class="admin-toolbar" style="padding:0 0 12px;border-bottom:1px solid var(--border);margin-bottom:0">
+        <div class="sbox" style="max-width:260px">
+          <svg class="si" width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="#94a3b8" stroke-width="1.5"/><path d="M13 13l3.5 3.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <input type="text" id="schedQ" placeholder="Rechercher un employé…" oninput="renderSchedules()">
+        </div>
+        <select class="fsel" id="schedDept" onchange="renderSchedules()"><option value="">Tous les départements</option></select>
+        <select class="fsel" id="schedFilter" onchange="renderSchedules()">
+          <option value="">Tous</option>
+          <option value="custom">Horaires personnalisés seulement</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 110px 110px 110px 110px auto;gap:10px;padding:8px 18px;background:var(--bg);border-bottom:1px solid var(--border)">
+        <span class="sched-label" style="text-align:left;font-size:11px;font-weight:700;color:var(--navy)">Employé</span>
+        <span class="sched-label">Début<br><span style="font-weight:400;color:var(--muted)">Lun-Jeu 08:00<br>Ven 08:00</span></span>
+        <span class="sched-label">Fin<br><span style="font-weight:400;color:var(--muted)">Lun-Jeu 17:30<br>Ven 18:00</span></span>
+        <span class="sched-label">Pause (min)<br><span style="font-weight:400;color:var(--muted)">Lun-Jeu 90<br>Ven 120</span></span>
+        <span class="sched-label">Durée (h)<br><span style="font-weight:400;color:var(--muted)">8h/jour</span></span>
+        <span class="sched-label"></span>
+      </div>
+      <div id="schedList"></div>
+    </div>
+
+    <!-- ── PANEL TOLÉRANCE RETARD ── -->
+    <div class="admin-panel" id="apanel-retard">
+      <div class="banner-info">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#1d4ed8" stroke-width="1.5"/><path d="M10 9v4M10 7h.01" stroke="#1d4ed8" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Le retard est recalculé depuis l'heure de check-in réelle (indépendamment de la valeur iVMS-4200 qui a sa propre tolérance interne de 15 min). Ex : avec 10 min de tolérance, une arrivée à 08:13 génère 3 min de retard ; une arrivée à 08:09 = aucun retard.
+      </div>
+      <div class="setting-row">
+        <div class="setting-info">
+          <strong>Tolérance globale de retard</strong>
+          <span>Nombre de minutes accordées avant de déclarer un retard (s'applique à tous les employés)</span>
+        </div>
+        <div class="setting-ctrl">
+          <input type="number" id="globalTolerance" min="0" max="60" value="0" style="width:80px" onchange="saveGlobalTolerance()">
+          <span class="setting-unit">minutes</span>
+        </div>
+      </div>
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px">
+        <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Tolérances individuelles</div>
+        <div class="banner-info" style="margin-bottom:10px">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#1d4ed8" stroke-width="1.5"/><path d="M10 9v4" stroke="#1d4ed8" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Laisser vide = utiliser la tolérance globale. Une valeur individuelle est prioritaire sur la valeur globale.
+        </div>
+        <div id="toleranceList"></div>
+      </div>
+    </div>
+
+    <!-- ── PANEL JOURS FÉRIÉS ── -->
+    <div class="admin-panel" id="apanel-feries">
+      <div class="banner-info">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#1d4ed8" stroke-width="1.5"/><path d="M10 9v4M10 7h.01" stroke="#1d4ed8" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Les jours fériés cochés ne sont pas comptabilisés comme jours ouvrés ni comme absences. Le calendrier est pré-chargé avec les jours fériés du Sénégal.
+      </div>
+      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Jours fériés Sénégal</div>
+      <div class="holiday-grid" id="holidayGrid"></div>
+      <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Ajouter un jour férié personnalisé</div>
+        <div class="holiday-custom">
+          <input type="date" id="customHolidayDate" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none">
+          <input type="text" id="customHolidayName" placeholder="Nom du jour férié…" style="flex:1;min-width:180px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none">
+          <button class="btn-save-settings" style="margin:0" onclick="addCustomHoliday()">Ajouter</button>
+        </div>
+        <div class="custom-holiday-list" id="customHolidayList"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- .content -->
+
+<!-- MODAL TERRAIN DETAIL -->
+<div class="modal-bg" id="modalTerrain">
+  <div class="modal">
+    <h2>Détail saisie terrain</h2>
+    <p id="modalTerrainSub"></p>
+    <div id="modalTerrainContent"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal('modalTerrain')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Version: 20260402_223120
+window.onerror = function(msg, src, line, col, err) {
+  document.getElementById('globalErrBanner')&&(
+    document.getElementById('globalErrBanner').style.display='flex',
+    document.getElementById('globalErrMsg').textContent='Ligne '+line+': '+msg
+  );
+  console.error('JS ERROR:', msg, 'line', line, err);
+  return false;
+};
+// ══════════════════════════════════════════════════════════════
+// BASE DE DONNÉES GLOBALE
+// ══════════════════════════════════════════════════════════════
+const DB = {
+  rows: [],           // toutes les lignes brutes parsées
+  employes: {},       // id → {name, dept, isNew, validated}
+  fichiers: [],
+  terrain: [],        // saisies terrain manuelles
+  pendingEmps: [],    // nouveaux employés en attente de validation
+  conges: [],         // congés saisis manuellement [{id,name,dept,dateFrom,dateTo,type,note,jours}]
+};
+
+// ══════════════════════════════════════════════════════════════
+// PERSISTANCE LOCALSTORAGE
+// ══════════════════════════════════════════════════════════════
+const STORAGE_KEY    = 'hikvision_db_v42_clean';
+const STORAGE_VERSION = '4.2'; // Incrémenter pour forcer la réinitialisation
+
+function checkStorageVersion(){
+  // Purger TOUTES les anciennes clés hikvision_ pour éviter pollution
+  const oldKeys = ['hikvision_dashboard_v4','hikvision_dashboard_v4_version',
+                   'hikvision_db_v4','hikvision_db_v41'];
+  oldKeys.forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} });
+
+  const savedVersion = localStorage.getItem(STORAGE_KEY+'_version');
+  if(savedVersion !== STORAGE_VERSION){
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem(STORAGE_KEY+'_version', STORAGE_VERSION);
+    console.log('🔄 Stockage réinitialisé (v'+STORAGE_VERSION+')');
+    return false;
+  }
+  return true;
+}
+
+function saveToStorage(){
+  try{
+    const data = {
+      rows:     DB.rows,
+      employes: DB.employes,
+      fichiers: DB.fichiers,
+      terrain:  DB.terrain,
+      conges:   DB.conges,
+      cfg: {
+        globalTolerance: CFG.globalTolerance,
+        tolerances:      CFG.tolerances,
+        schedules:       CFG.schedules,
+        // ⚠️ Sauver SEULEMENT les fériés personnalisés, pas tous les fériés fixes
+        // (les fériés fixes sont recalculés à chaque chargement par initDefaultHolidays)
+        customHolidays:  CFG.customHolidays,
+      }
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }catch(e){ console.warn('Sauvegarde localStorage échouée:', e.message); }
+}
+
+function loadFromStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+    if(!data.rows||!data.employes) return false;
+    DB.rows       = data.rows       || [];
+    DB.employes   = data.employes   || {};
+    DB.fichiers   = data.fichiers   || [];
+    DB.terrain    = data.terrain    || [];
+    DB.conges     = data.conges     || [];
+    if(data.cfg){
+      CFG.globalTolerance = data.cfg.globalTolerance || 0;
+      CFG.tolerances      = data.cfg.tolerances      || {};
+      CFG.schedules       = data.cfg.schedules       || {};
+      CFG.customHolidays  = data.cfg.customHolidays  || [];
+      // ⚠️ NE PAS restaurer activeHolidays depuis le localStorage
+      // Les fériés fixes sont toujours recalculés par initDefaultHolidays()
+      // On ajoute seulement les fériés personnalisés sauvegardés
+      CFG.customHolidays.forEach(h=>CFG.activeHolidays.add(h.date));
+    }
+    console.log('✅ Données restaurées:', DB.rows.length, 'pointages,', DB.conges.length, 'congés');
+    return true;
+  }catch(e){
+    console.warn('Restauration localStorage échouée:', e.message);
+    return false;
+  }
+}
+
+function clearStorage(){
+  if(!confirm('Effacer toutes les données sauvegardées ? Cette action est irréversible.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  DB.rows=[];DB.employes={};DB.fichiers=[];DB.terrain=[];DB.conges=[];
+  refreshAll();
+  alert('Données effacées.');
+}
+
+function storageInfo(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY)||'';
+    const kb = (raw.length/1024).toFixed(1);
+    return `${kb} Ko utilisés`;
+  }catch(e){ return 'N/A'; }
+}
+
+
+const SHIFT_MIN = 480; // 8h = durée standard Lun-Jeu et Vendredi (hors pause)
+let charts = {};
+let empPage=0, detPage=0, absPage=0;
+let PER = 20; // modifiable via le sélecteur de lignes par page
+let filtEmp=[], filtDet=[], filtAbs=[];
+let activePeriod = '';
+
+// ══════════════════════════════════════════════════════════════
+// STATUTS — classification
+// ══════════════════════════════════════════════════════════════
+const ST = {
+  'Normal':           {cls:'sb-normal',   lbl:'Normal'},
+  'Late':             {cls:'sb-late',     lbl:'Retard'},
+  'Early':            {cls:'sb-early',    lbl:'Anticipé'},
+  'Late/Early':       {cls:'sb-lateearly',lbl:'Ret.+Dép.'},
+  'Absence':          {cls:'sb-absence',  lbl:'Absence'},
+  'No Shift Schedule':{cls:'sb-nosh',     lbl:'Jour de repos'},
+};
+function stBadge(s){ const d=ST[s]||{cls:'sb-nosh',lbl:s||'—'}; return `<span class="sb ${d.cls}">${d.lbl}</span>`; }
+
+// Type d'absence
+// Classification précise des 3 types d'absence
+function absType(r){
+  if(r.status!=='Absence') return null;
+  const ci = r.checkin  && r.checkin !=='-' && r.checkin !=='';
+  const co = r.checkout && r.checkout!=='-' && r.checkout!=='';
+  if(!ci && !co) return 'abs-total';          // Aucun pointage
+  if(ci  && !co) return 'abs-depart';         // Arrivée OK, départ manquant
+  if(!ci && co)  return 'abs-arrivee';        // Départ OK, arrivée manquante
+  return 'abs-total';
+}
+
+// Labels et couleurs par type d'absence
+const ABS_META = {
+  'abs-total':   { lbl:'Absence totale',         cls:'sb-absence',  color:'#9d174d', bg:'#fce7f3' },
+  'abs-depart':  { lbl:'Abs. partielle — départ', cls:'sb-abs-dep',  color:'#7c3aed', bg:'#ede9fe' },
+  'abs-arrivee': { lbl:'Abs. partielle — arrivée',cls:'sb-abs-arr',  color:'#b45309', bg:'#fef3c7' },
+};
+
+function absTypeLbl(r){
+  const t = absType(r);
+  if(!t) return '';
+  const m = ABS_META[t];
+  return `<span class="sb" style="background:${m.bg};color:${m.color}">${m.lbl}</span>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function showPage(name, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='overview') buildOverview();
+  if(name==='alertes') buildAlertes();
+  if(name==='admin') renderAdmin();
+  if(name==='conges'){renderConges();populateCongeEmp();}
+}
+function ev(e){e.preventDefault();e.stopPropagation();}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ══════════════════════════════════════════════════════════════
+// IMPORT
+// ══════════════════════════════════════════════════════════════
+function dropFiles(e){
+  ev(e); document.getElementById('dropZone').classList.remove('drag');
+  processFiles(Array.from(e.dataTransfer.files));
+}
+function handleFiles(e){ processFiles(Array.from(e.target.files)); e.target.value=''; }
+function processFiles(files){
+  files.filter(f=>/\.(xlsx|xls)$/i.test(f.name)).forEach(readFile);
+}
+
+function readFile(file){
+  if(DB.fichiers.find(f=>f.name===file.name&&f.size===file.size)){
+    alert(`"${file.name}" est déjà chargé.`); return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const wb = XLSX.read(e.target.result,{type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const rows = parseHikvision(raw);
+      if(!rows.length){alert(`Aucune donnée valide dans "${file.name}"`);return;}
+      const newEmps = mergeRows(rows);
+      DB.fichiers.push({name:file.name,size:file.size,rows:rows.length,date:new Date().toLocaleDateString('fr-FR')});
+      if(newEmps.length) showNewEmpValidation(newEmps);
+      refreshAll();
+      document.getElementById('importEmpty').style.display='none';
+    }catch(err){ alert(`Erreur lecture "${file.name}": ${err.message}`); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ══════════════════════════════════════════════════════════════
+// PARSING iVMS-4200
+// ══════════════════════════════════════════════════════════════
+function parseMin(v){
+  if(v===null||v===undefined||v===''||v==='-') return 0;
+  const s=String(v).replace(/[^0-9]/g,'');
+  return s?parseInt(s):0;
+}
+
+function parseHikvision(raw){
+  const rows=[];
+  for(let i=0;i<raw.length;i++){
+    const r=raw[i];
+    const c0=String(r[0]).trim();
+    // Ignorer lignes parasites
+    if(!c0||c0.startsWith('Check-Out')||c0.startsWith('Check-In')||
+       c0.toLowerCase().startsWith('attendance')||c0.toLowerCase()==='person id') continue;
+
+    const name=String(r[1]||'').trim();
+    const dept=String(r[2]||'').trim();
+    const date=String(r[3]||'').trim();
+    if(!name||!date||date.length<8) continue;
+
+    // Normaliser date
+    let dateStr=date;
+    if(/^\d{5}$/.test(date)){
+      const d=new Date(Math.round((parseInt(date)-25569)*86400*1000));
+      dateStr=d.toISOString().slice(0,10);
+    } else if(/\d{4}[-\/]\d{2}[-\/]\d{2}/.test(date)){
+      dateStr=date.slice(0,10).replace(/\//g,'-');
+    }
+
+    const status=String(r[6]||'').trim();
+    const ci=String(r[7]||'').trim();
+    const co=String(r[8]||'').trim();
+
+    rows.push({
+      id:c0, name, dept:dept||'N/A', date:dateStr,
+      shift:String(r[4]||'').trim(),
+      status,
+      checkin: ci==='-'?'':ci,
+      checkout: co==='-'?'':co,
+      late:  parseMin(r[9]),
+      early: parseMin(r[10]),
+      worked:parseMin(r[13]),
+      terrainStart:'', terrainEnd:'', terrainNote:'', terrainConf:'',
+    });
+  }
+  return rows;
+}
+
+// ══════════════════════════════════════════════════════════════
+// FUSION + GESTION NOUVEAUX EMPLOYÉS
+// ══════════════════════════════════════════════════════════════
+function mergeRows(newRows){
+  const newEmps=[];
+  // LAST-WINS : le nouveau fichier écrase les lignes existantes pour la même clé id+date
+  // Construire un index des lignes existantes pour remplacement rapide
+  const rowIndex={}; // clé → index dans DB.rows
+  DB.rows.forEach((r,i)=>{ rowIndex[`${r.id}|${r.date}`]=i; });
+
+  newRows.forEach(r=>{
+    // Gestion des nouveaux employés
+    if(!DB.employes[r.id]){
+      if(Object.keys(DB.employes).length>0){
+        newEmps.push({id:r.id,name:r.name,dept:r.dept});
+        DB.employes[r.id]={name:r.name,dept:r.dept,isNew:true,validated:false};
+      } else {
+        DB.employes[r.id]={name:r.name,dept:r.dept,isNew:false,validated:true};
+      }
+    }
+    const key=`${r.id}|${r.date}`;
+    if(rowIndex[key]!==undefined){
+      // Écraser la ligne existante (le nouveau fichier est plus récent/complet)
+      DB.rows[rowIndex[key]]=r;
+    } else {
+      // Nouvelle ligne
+      rowIndex[key]=DB.rows.length;
+      DB.rows.push(r);
+    }
+  });
+  detectSuspectHolidays();
+  return newEmps;
+}
+
+function detectSuspectHolidays(){
+  const byDate={};
+  DB.rows.forEach(r=>{
+    if(r.status==='No Shift Schedule') return;
+    if(!byDate[r.date]) byDate[r.date]={total:0,presents:0};
+    byDate[r.date].total++;
+    if(r.status!=='Absence') byDate[r.date].presents++;
+  });
+  const totalEmps=Object.keys(DB.employes).filter(id=>DB.employes[id]?.validated!==false&&!DB.employes[id]?.excluded).length;
+  if(!totalEmps) return;
+  Object.entries(byDate).forEach(([date,d])=>{
+    if(d.presents===0&&d.total>=Math.floor(totalEmps*0.8)&&!isFerie(date)){
+      CFG.activeHolidays.add(date);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// VALIDATION NOUVEAUX EMPLOYÉS
+// ══════════════════════════════════════════════════════════════
+function showNewEmpValidation(emps){
+  const sec=document.getElementById('newEmpSection');
+  const list=document.getElementById('newEmpList');
+  DB.pendingEmps=[...DB.pendingEmps,...emps.filter(e=>!DB.pendingEmps.find(p=>p.id===e.id))];
+  renderPendingEmps();
+  sec.style.display='block';
+  // Switcher vers l'onglet import
+  document.querySelectorAll('.tab').forEach(t=>{ if(t.textContent.includes('Fichiers')) t.click(); });
+}
+
+function renderPendingEmps(){
+  const list=document.getElementById('newEmpList');
+  const pending=DB.pendingEmps.filter(e=>!DB.employes[e.id]?.validated||DB.employes[e.id]?.isNew);
+  if(!pending.length){ document.getElementById('newEmpSection').style.display='none'; return; }
+  list.innerHTML=pending.map(e=>`
+    <div class="new-emp-item" id="nemp-${e.id}" style="border-left:3px solid transparent;transition:border-color .15s">
+      <input type="checkbox" class="emp-chk" data-id="${e.id}"
+        onchange="onEmpChkChange()"
+        style="width:15px;height:15px;cursor:pointer;accent-color:#15803d;flex-shrink:0">
+      <div class="info" style="cursor:pointer" onclick="toggleEmpChk('${e.id}')">
+        <strong>${e.name}</strong>
+        <span>ID: ${e.id} · Dépt: ${e.dept}</span>
+      </div>
+      <button class="btn-sm btn-sm-ok" onclick="validateEmp('${e.id}',true)">✓</button>
+      <button class="btn-sm btn-sm-no" onclick="validateEmp('${e.id}',false)">✗</button>
+    </div>`).join('');
+  updateBulkButtons();
+}
+
+function toggleEmpChk(id){
+  const chk=document.querySelector(`.emp-chk[data-id="${id}"]`);
+  if(chk){ chk.checked=!chk.checked; onEmpChkChange(); }
+}
+
+function toggleAllEmps(checked){
+  document.querySelectorAll('.emp-chk').forEach(c=>{
+    c.checked=checked;
+    const item=document.getElementById('nemp-'+c.dataset.id);
+    if(item) item.style.borderLeftColor=checked?'#15803d':'transparent';
+  });
+  updateBulkButtons();
+}
+
+function onEmpChkChange(){
+  const chks=[...document.querySelectorAll('.emp-chk')];
+  const checked=chks.filter(c=>c.checked);
+  // Mettre à jour les styles de bordure
+  chks.forEach(c=>{
+    const item=document.getElementById('nemp-'+c.dataset.id);
+    if(item) item.style.borderLeftColor=c.checked?'#15803d':'transparent';
+  });
+  // Mettre à jour la case "tout sélectionner"
+  const all=document.getElementById('chkAll');
+  if(all){ all.checked=checked.length===chks.length&&chks.length>0; all.indeterminate=checked.length>0&&checked.length<chks.length; }
+  updateBulkButtons();
+}
+
+function updateBulkButtons(){
+  const n=[...document.querySelectorAll('.emp-chk')].filter(c=>c.checked).length;
+  const sc=document.getElementById('selCount');
+  if(sc) sc.textContent=`${n} sélectionné${n>1?'s':''}`;
+  const active=n>0;
+  ['btnValAll','btnRejAll'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b){ b.style.opacity=active?'1':'.4'; b.style.pointerEvents=active?'auto':'none'; }
+  });
+}
+
+function validateSelected(accept){
+  const ids=[...document.querySelectorAll('.emp-chk:checked')].map(c=>c.dataset.id);
+  if(!ids.length) return;
+  const label=accept?'valider':'rejeter';
+  if(!confirm(`${label.charAt(0).toUpperCase()+label.slice(1)} ${ids.length} employé(s) ?`)) return;
+  ids.forEach(id=>_doValidate(id,accept));
+  // Réinitialiser "tout sélectionner"
+  const all=document.getElementById('chkAll');
+  if(all){all.checked=false;all.indeterminate=false;}
+  renderPendingEmps();
+  refreshAll();
+}
+
+function validateEmp(id, accept){
+  _doValidate(id, accept);
+  renderPendingEmps();
+  refreshAll();
+}
+
+function _doValidate(id, accept){
+  if(accept){
+    if(DB.employes[id]) DB.employes[id]={...DB.employes[id],isNew:false,validated:true};
+  } else {
+    DB.rows=DB.rows.filter(r=>r.id!==id);
+    delete DB.employes[id];
+  }
+  DB.pendingEmps=DB.pendingEmps.filter(e=>e.id!==id);
+}
+
+// ══════════════════════════════════════════════════════════════
+// REFRESH
+// ══════════════════════════════════════════════════════════════
+function refreshAll(){
+  saveToStorage();
+  renderFilesList();
+  updateHeader();
+  buildPeriodBar();
+  populateFilters();
+  empPage=0;detPage=0;absPage=0;
+  renderEmp();renderDet();renderAbs();renderTerrain();renderConges();populateCongeEmp();
+  populateTerrainEmp();
+  if(document.getElementById('page-overview').classList.contains('active')) buildOverview();
+  if(document.getElementById('page-alertes').classList.contains('active')) buildAlertes();
+  if(document.getElementById('page-admin').classList.contains('active')){ renderAdmin(); renderTolerances(); renderSchedules(); renderHolidays(); }
+}
+
+function updateHeader(){
+  const nb=Object.values(DB.employes).filter(e=>e.validated!==false&&!e.excluded).length;
+  const nbExcl=Object.values(DB.employes).filter(e=>e.excluded).length;
+  document.getElementById('hEmp').textContent=`${nb} suivi${nb>1?'s':''}${nbExcl>0?' ('+nbExcl+' exclus)':''}`;
+  const months=getMonths();
+  document.getElementById('hSub').textContent=`Hikvision iVMS-4200 · ${DB.fichiers.length} fichier(s)`;
+}
+
+function getMonths(){
+  const s=new Set(DB.rows.map(r=>r.date.slice(0,7)));
+  return [...s].sort();
+}
+
+function buildPeriodBar(){
+  const months  = getMonths();
+  const years   = [...new Set(months.map(m=>m.slice(0,4)))].sort();
+  const MOIS_FR = ['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+  const sel = document.getElementById('periodSelect');
+  if(!sel) return;
+
+  // Reconstruire les options
+  sel.innerHTML = '<option value="">Toute la période</option>';
+
+  // Séparateur années si plusieurs
+  if(years.length > 1){
+    years.forEach(y=>{
+      const grp = document.createElement('optgroup');
+      grp.label = '── Année '+y+' ──';
+      // Option "Toute l'année"
+      const oY = document.createElement('option');
+      oY.value = y;
+      oY.textContent = '📅 Année '+y;
+      if(activePeriod===y) oY.selected=true;
+      grp.appendChild(oY);
+      // Mois de cette année
+      months.filter(m=>m.startsWith(y)).forEach(m=>{
+        const o=document.createElement('option');
+        o.value=m;
+        const mo=parseInt(m.slice(5))-1;
+        o.textContent='  '+MOIS_FR[mo]+' '+y;
+        if(activePeriod===m) o.selected=true;
+        grp.appendChild(o);
+      });
+      sel.appendChild(grp);
+    });
+  } else {
+    // Une seule année : afficher les mois directement
+    if(years.length===1){
+      const grpY = document.createElement('optgroup');
+      grpY.label = '── Année '+years[0]+' ──';
+      const oY=document.createElement('option');
+      oY.value=years[0]; oY.textContent='📅 Année '+years[0];
+      if(activePeriod===years[0]) oY.selected=true;
+      grpY.appendChild(oY);
+      sel.appendChild(grpY);
+    }
+    months.forEach(m=>{
+      const o=document.createElement('option');
+      o.value=m;
+      const [y,mo]=m.split('-');
+      o.textContent='  '+MOIS_FR[parseInt(mo)-1]+' '+y;
+      if(activePeriod===m) o.selected=true;
+      sel.appendChild(o);
+    });
+  }
+
+  // Valider que la sélection est cohérente
+  if(activePeriod && !months.some(m=>m===activePeriod||m.startsWith(activePeriod))){
+    activePeriod='';
+    sel.value='';
+  }
+
+  // Mettre à jour le hbadge info (juste hEmp)
+  const nb=Object.values(DB.employes).filter(e=>e.validated!==false&&!e.excluded).length;
+  const nbExcl=Object.values(DB.employes).filter(e=>e.excluded).length;
+  const hEmp=document.getElementById('hEmp');
+  if(hEmp) hEmp.textContent=`${nb} suivi${nb>1?'s':''}${nbExcl>0?' ('+nbExcl+' exclus)':''}`;
+
+  // Period-bar dans overview (complémentaire, boutons rapides)
+  const bar=document.getElementById('periodBar');
+  if(!bar) return;
+  bar.innerHTML='<span class="period-lbl">Période :</span>';
+  const btnAll=document.createElement('button');
+  btnAll.className='pbtn-period'+(!activePeriod?' active':'');
+  btnAll.textContent='Tout';
+  btnAll.onclick=()=>{ activePeriod=''; sel.value=''; buildPeriodBar();
+    empPage=0;absPage=0;detPage=0;
+    renderEmp();renderDet();renderAbs();buildOverview();buildAlertes();};
+  bar.appendChild(btnAll);
+  months.forEach(m=>{
+    const btn=document.createElement('button');
+    btn.className='pbtn-period'+(activePeriod===m?' active':'');
+    const [y,mo]=m.split('-');
+    btn.textContent=MOIS_FR[parseInt(mo)-1]+(years.length>1?' '+y:'');
+    btn.onclick=()=>{activePeriod=m;sel.value=m;buildPeriodBar();
+      empPage=0;absPage=0;detPage=0;
+      renderEmp();renderDet();renderAbs();buildOverview();buildAlertes();};
+    bar.appendChild(btn);
+  });
+  if(years.length>1){
+    years.forEach(y=>{
+      const btn=document.createElement('button');
+      btn.className='pbtn-period'+(activePeriod===y?' active':'');
+      btn.textContent=y;
+      btn.onclick=()=>{activePeriod=y;sel.value=y;buildPeriodBar();
+        empPage=0;absPage=0;detPage=0;
+        renderEmp();renderDet();renderAbs();buildOverview();buildAlertes();};
+      bar.appendChild(btn);
+    });
+  }
+}
+function getRows(){
+  const rows=DB.rows.filter(r=>DB.employes[r.id]?.validated!==false&&!DB.employes[r.id]?.excluded);
+  if(!activePeriod) return rows;
+  // activePeriod peut être 'YYYY-MM' (mois), 'YYYY' (année), ou 'YYYY-MM-DD/YYYY-MM-DD' (plage)
+  if(activePeriod.includes('/')) {
+    const [from,to] = activePeriod.split('/');
+    return rows.filter(r=>r.date>=from&&r.date<=to);
+  }
+  return rows.filter(r=>r.date.startsWith(activePeriod));
+}
+
+function onPeriodSelect(val){
+  activePeriod = val;
+  buildPeriodBar();
+  empPage=0; absPage=0; detPage=0;
+  renderEmp(); renderDet(); renderAbs();
+  if(document.getElementById('page-overview').classList.contains('active')) buildOverview();
+  if(document.getElementById('page-alertes').classList.contains('active')) buildAlertes();
+}
+
+// ══════════════════════════════════════════════════════════════
+// STATS — cœur du calcul
+// ══════════════════════════════════════════════════════════════
+function computeStats(rows){
+  // Jours ouvrés = jours avec au moins 1 ligne non "No Shift Schedule", hors fériés actifs
+  const ouvresDates=[...new Set(
+    rows.filter(r=>r.status!=='No Shift Schedule'&&!isFerie(r.date)).map(r=>r.date)
+  )].sort();
+  const joursOuvres=ouvresDates.length;
+
+  // Index par employé : jours pointés et données
+  const byEmp={};
+  rows.forEach(r=>{
+    // Weekend ou jour férié → ne compte ni comme présence ni comme absence
+    if(isFerie(r.date)) return;
+
+    if(!byEmp[r.id]) byEmp[r.id]={
+      id:r.id,name:DB.employes[r.id]?.name||r.name,dept:DB.employes[r.id]?.dept||r.dept,
+      datesPresent:new Set(),   // jours effectivement présent
+      datesCovered:new Set(),   // jours présent OU absence déclarée (pour ne pas compter 2x)
+      absTotal:0,
+      absAucun:0,
+      absDepart:0,
+      absArrivee:0,
+      retards:0,retardMin:0,departs:0,workedMin:0,statuses:{}
+    };
+    const e=byEmp[r.id];
+    e.statuses[r.status]=(e.statuses[r.status]||0)+1;
+
+    if(r.status==='No Shift Schedule') return;
+
+    // Marquer ce jour comme couvert (présence ou absence déclarée)
+    e.datesCovered.add(r.date);
+
+    if(r.status==='Absence'){
+      // Si congé validé ce jour → ne pas compter comme absence
+      if(isEnConge(r.id, r.date)){
+        e.congesMin=(e.congesMin||0)+1; // jour de congé (recalculé dynamiquement)
+      } else {
+        e.absTotal++;
+        const t=absType(r);
+        if(t==='abs-total')    e.absAucun++;
+        else if(t==='abs-depart')   e.absDepart++;
+        else if(t==='abs-arrivee')  e.absArrivee++;
+      }
+    } else {
+      e.datesPresent.add(r.date);
+      // Retard recalculé depuis CheckIn (ignore iVMS qui a sa propre tolérance)
+      const lateEffective = calcLateEffective(r.id, r.date, r.checkin);
+      if(lateEffective>0){e.retards++;e.retardMin+=lateEffective;}
+      // Départ anticipé recalculé depuis CheckOut vs fin de shift officielle
+      const earlyEffective = calcEarlyEffective(r.id, r.date, r.checkout);
+      if(earlyEffective>0) e.departs++;
+      e.earlyMin=(e.earlyMin||0)+earlyEffective;
+      // Temps travaillé recalculé : (CheckOut-CheckIn) - pause officielle
+      const workedCalc = calcWorkedMin(r.id, r.date, r.checkin, r.checkout);
+      e.workedMin+=workedCalc;
+      // Durée standard ce jour (pour calcul h.supp)
+      e.standardMin=(e.standardMin||0)+getShiftMin(r.id,r.date);
+    }
+  });
+
+  // Employés n'ayant aucune ligne du tout sur cette période
+  Object.keys(DB.employes).forEach(id=>{
+    if(DB.employes[id]?.validated===false||DB.employes[id]?.excluded) return;
+    if(!byEmp[id]) byEmp[id]={
+      id,name:DB.employes[id].name,dept:DB.employes[id].dept,
+      datesPresent:new Set(),
+      datesCovered:new Set(),
+      absTotal:0,absAucun:0,absDepart:0,absArrivee:0,
+      retards:0,retardMin:0,departs:0,workedMin:0,statuses:{}
+    };
+  });
+
+  const empList=Object.values(byEmp).map(e=>{
+    const presents=e.datesPresent.size;
+    // Absences non déclarées = jours ouvrés sans ligne de présence NI d'absence
+    // Jours ouvrés sans AUCUNE ligne : utilise datesCovered précalculé (présence + absences déclarées)
+    const absNonDeclares=ouvresDates.filter(d=>!e.datesCovered.has(d)).length;
+    const absAucunTotal = e.absAucun + absNonDeclares;
+    const totalAbsences = absAucunTotal + e.absDepart + e.absArrivee;
+    return{
+      id:e.id, name:e.name, dept:e.dept,
+      presents,
+      absTotal:   totalAbsences,
+      absAucun:   absAucunTotal,   // Aucun pointage (total + non déclarées)
+      absDepart:  e.absDepart,     // Arrivée OK, départ manquant
+      absArrivee: e.absArrivee,    // Départ OK, arrivée manquante
+      conges:e.congesMin||0, // nb jours congé dans la période analysée
+      retards:e.retards, h_retard:+(e.retardMin/60).toFixed(1),
+      departs:e.departs,
+      h_travail:+(e.workedMin/60).toFixed(1),
+      h_supp:+((e.workedMin-e.standardMin)/60).toFixed(1),
+      taux:joursOuvres>0?+(presents/joursOuvres*100).toFixed(1):0,
+      statut:e.retards>=5||totalAbsences>=10?'critique':e.retards>=2||totalAbsences>=4?'attention':'ok',
+      statuses:e.statuses
+    };
+  });
+
+  // Stats par statut (pour donut) — absences ventilées par type
+  // Compter les statuts en recalculant les retards depuis notre tolérance
+  const stCounts={Normal:0,Late:0,Early:0,'Late/Early':0,Absence:0,'No Shift Schedule':0};
+  rows.filter(r=>!isJourNonOuvre(r.date)).forEach(r=>{
+    if(r.status==='Absence'||r.status==='No Shift Schedule'){
+      stCounts[r.status]=(stCounts[r.status]||0)+1;
+    } else {
+      // Recalculer le statut depuis nos propres calculs (ignore iVMS)
+      const late  = calcLateEffective(r.id,r.date,r.checkin);
+      const early = calcEarlyEffective(r.id,r.date,r.checkout)>0;
+      let st = 'Normal';
+      if(late>0 && early) st='Late/Early';
+      else if(late>0)     st='Late';
+      else if(early)      st='Early';
+      stCounts[st]=(stCounts[st]||0)+1;
+    }
+  });
+
+  // Daily
+  const daily={};
+  rows.filter(r=>r.status!=='No Shift Schedule'&&!isFerie(r.date)).forEach(r=>{
+    if(!daily[r.date]) daily[r.date]={date:r.date,presents:0,absences:0,retards:0};
+    if(r.status==='Absence') daily[r.date].absences++;
+    else{ daily[r.date].presents++; if(calcLateEffective(r.id,r.date,r.checkin)>0) daily[r.date].retards++; }
+  });
+
+  // Dept
+  const byDept={};
+  empList.forEach(e=>{
+    if(!byDept[e.dept]) byDept[e.dept]={dept:e.dept,effectif:0,presents:0,absences:0,absAucun:0,absDepart:0,absArrivee:0,retards:0,h_travail:0};
+    byDept[e.dept].effectif++;
+    byDept[e.dept].presents  +=e.presents;
+    byDept[e.dept].absences  +=e.absTotal;
+    byDept[e.dept].absAucun  +=e.absAucun;
+    byDept[e.dept].absDepart +=e.absDepart;
+    byDept[e.dept].absArrivee+=e.absArrivee;
+    byDept[e.dept].retards   +=e.retards;
+    byDept[e.dept].h_travail+=e.h_travail;
+  });
+  Object.values(byDept).forEach(d=>{
+    const att=d.effectif*joursOuvres;
+    d.taux=att>0?+(d.presents/att*100).toFixed(1):0;
+    d.h_travail=+d.h_travail.toFixed(0);
+  });
+
+  return{
+    joursOuvres,
+    totalPresents:  empList.reduce((s,e)=>s+e.presents,0),
+    totalAbsences:  empList.reduce((s,e)=>s+e.absTotal,0),
+    totalAbsAucun:  empList.reduce((s,e)=>s+e.absAucun,0),
+    totalAbsDepart: empList.reduce((s,e)=>s+e.absDepart,0),
+    totalAbsArrivee:empList.reduce((s,e)=>s+e.absArrivee,0),
+    totalRetards:rows.filter(r=>!isJourNonOuvre(r.date)&&r.status!=='No Shift Schedule'&&r.status!=='Absence'&&calcLateEffective(r.id,r.date,r.checkin)>0).length,
+    tauxMoyen:empList.length?+(empList.reduce((s,e)=>s+e.taux,0)/empList.length).toFixed(1):0,
+    totalH:+(rows.reduce((s,r)=>s+r.worked,0)/60).toFixed(0),
+    stCounts,
+    empList:empList.sort((a,b)=>a.name.localeCompare(b.name)),
+    deptList:Object.values(byDept).sort((a,b)=>a.dept.localeCompare(b.dept)),
+    daily:Object.values(daily).sort((a,b)=>a.date.localeCompare(b.date)),
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// VUE D'ENSEMBLE
+// ══════════════════════════════════════════════════════════════
+function buildOverview(){
+  const rows=getRows();
+  if(!rows.length) return;
+  const s=computeStats(rows);
+
+  document.getElementById('kpiGrid').innerHTML=`
+    <div class="kpi c-blue"><div class="kpi-lbl">Présences</div><div class="kpi-val">${s.totalPresents}</div><div class="kpi-sub">${s.joursOuvres} jours ouvrés</div></div>
+    <div class="kpi c-red"><div class="kpi-lbl">Absences totales</div><div class="kpi-val">${s.totalAbsences}</div><div class="kpi-sub">tous types confondus</div></div>
+    <div class="kpi c-absence"><div class="kpi-lbl">Aucun pointage</div><div class="kpi-val">${s.totalAbsAucun}</div><div class="kpi-sub">ni arrivée ni départ</div></div>
+    <div class="kpi c-depart"><div class="kpi-lbl">Départ manquant</div><div class="kpi-val">${s.totalAbsDepart}</div><div class="kpi-sub">arrivée OK, pas de départ</div></div>
+    <div class="kpi c-arrivee"><div class="kpi-lbl">Arrivée manquante</div><div class="kpi-val">${s.totalAbsArrivee}</div><div class="kpi-sub">départ OK, pas d'arrivée</div></div>
+    <div class="kpi c-orange"><div class="kpi-lbl">Retards</div><div class="kpi-val">${s.totalRetards}</div><div class="kpi-sub">après tolérance</div></div>
+    <div class="kpi c-green"><div class="kpi-lbl">Taux présence</div><div class="kpi-val">${s.tauxMoyen}%</div><div class="kpi-sub">moyenne équipe</div></div>
+    <div class="kpi c-navy"><div class="kpi-lbl">H. travaillées</div><div class="kpi-val">${s.totalH}h</div><div class="kpi-sub">total équipe</div></div>`;
+
+  // Donut statuts
+  // On construit le donut avec les 3 types d'absence détaillés
+  const stColors={
+    'Normal':'#15803d','Late':'#b91c1c','Early':'#1d4ed8','Late/Early':'#b45309',
+    'abs-total':'#9d174d','abs-depart':'#7c3aed','abs-arrivee':'#b45309'
+  };
+  const stLabels={
+    'Normal':'Normal','Late':'Retard','Early':'Anticipé','Late/Early':'Ret.+Dép.',
+    'abs-total':'Abs. aucun pointage','abs-depart':'Abs. départ manquant','abs-arrivee':'Abs. arrivée manquante'
+  };
+  const stKeys=['Normal','Early','Late','Late/Early','abs-total','abs-depart','abs-arrivee'];
+  const stData=[
+    s.stCounts['Normal']||0, s.stCounts['Early']||0, s.stCounts['Late']||0, s.stCounts['Late/Early']||0,
+    s.totalAbsAucun, s.totalAbsDepart, s.totalAbsArrivee
+  ];
+  destroyChart('donut');
+  charts.donut=new Chart(document.getElementById('chartDonut'),{
+    type:'doughnut',
+    data:{labels:stKeys.map(k=>stLabels[k]),datasets:[{data:stData,backgroundColor:stKeys.map(k=>stColors[k]),borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}
+  });
+  document.getElementById('donutLegend').innerHTML=stKeys.map((k,i)=>
+    `<div class="li"><span class="ld" style="background:${stColors[k]}"></span>${stLabels[k]} (${stData[i]})</div>`).join('');
+
+  // Daily
+  destroyChart('daily');
+  charts.daily=new Chart(document.getElementById('chartDaily'),{
+    type:'bar',
+    data:{
+      labels:s.daily.map(d=>d.date.slice(5)),
+      datasets:[
+        {label:'Présents',data:s.daily.map(d=>d.presents),backgroundColor:'#1d4ed8',borderRadius:3},
+        {label:'Absences',data:s.daily.map(d=>d.absences),backgroundColor:'#ec4899',borderRadius:3},
+        {label:'Retards', data:s.daily.map(d=>d.retards), backgroundColor:'#f97316',borderRadius:3},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:11}}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'}}}}
+  });
+
+  // Dept cards
+  const dColors={AOE:'#1d4ed8',GES:'#15803d',GA:'#b45309'};
+  document.getElementById('deptGrid').innerHTML=s.deptList.map(d=>{
+    const col=dColors[d.dept]||'#64748b';
+    return`<div class="dept-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:${col}">${d.dept}</span>
+        <span style="font-size:11px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:20px">${d.effectif} employés</span>
+      </div>
+      <div class="dept-stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="ds"><div class="ds-val" style="color:${col}">${d.presents}</div><div class="ds-lbl">Présences</div></div>
+        <div class="ds"><div class="ds-val" style="color:var(--green)">${d.taux}%</div><div class="ds-lbl">Taux prés.</div></div>
+        <div class="ds"><div class="ds-val" style="color:var(--orange)">${d.retards}</div><div class="ds-lbl">Retards</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px">
+        <div class="ds" style="background:#fff1f2"><div class="ds-val" style="color:#9d174d;font-size:16px">${d.absences}</div><div class="ds-lbl">Abs. totales</div></div>
+        <div class="ds" style="background:#f5f3ff"><div class="ds-val" style="color:#7c3aed;font-size:16px">${d.absDepart}</div><div class="ds-lbl">Dép. manquant</div></div>
+        <div class="ds" style="background:#fffbeb"><div class="ds-val" style="color:#b45309;font-size:16px">${d.absArrivee}</div><div class="ds-lbl">Arr. manquante</div></div>
+      </div>
+      <div class="pbar"><div class="pfill" style="width:${d.taux}%;background:${col}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// TABLE EMPLOYÉS
+// ══════════════════════════════════════════════════════════════
+
+// ── Indicateurs de période dans les toolbars ──────────────────
+function scrollToTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
+
+
+function renderEmp(){
+  // Alimenter le select période employés depuis les mois disponibles
+  const allMonths=getMonths();
+  const allYears=[...new Set(allMonths.map(m=>m.slice(0,4)))].sort();
+  const epSel=document.getElementById('empPeriod');
+  if(epSel){
+    const epCur=epSel.value;
+    epSel.innerHTML='<option value="">Toute la période</option>';
+    if(allYears.length>1) allYears.forEach(y=>{
+      epSel.innerHTML+=`<option value="${y}">Année ${y}</option>`;
+    });
+    const MOIS_FR=['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+    allMonths.forEach(m=>{const[y,mo]=m.split('-');epSel.innerHTML+=`<option value="${m}">${MOIS_FR[parseInt(mo)-1]} ${y}</option>`;});
+    epSel.value=epCur;
+  }
+  // Appliquer le filtre période local (priorité sur le sélecteur global)
+  const epVal = epSel?.value||'';
+  let rows;
+  if(epVal){
+    rows=DB.rows.filter(r=>DB.employes[r.id]?.validated!==false&&!DB.employes[r.id]?.excluded&&r.date.startsWith(epVal));
+  } else {
+    rows=getRows();
+  }
+  if(!rows.length){document.getElementById('empBody').innerHTML='<tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--muted)">Aucune donnée</td></tr>';return;}
+  const s=computeStats(rows);
+  const q=document.getElementById('empQ').value.toLowerCase();
+  const d=document.getElementById('empDept').value;
+  const so=document.getElementById('empSort').value;
+
+  filtEmp=s.empList.filter(e=>(!q||e.name.toLowerCase().includes(q)||e.id.includes(q))&&(!d||e.dept===d));
+  // Filtre colonne
+  filtEmp=applyColFilter(filtEmp,'emp',[{key:'dept',col:'dept'},{key:'statut',col:'statut'}]);
+  // Tri colonne (priorité sur le select legacy)
+  const cs=COL_SORT['emp'];
+  filtEmp=sortData(filtEmp,cs.col,cs.dir);
+
+  const start=empPage*PER;
+  const slice=filtEmp.slice(start,start+PER);
+  const tc=t=>t>=80?'#15803d':t>=60?'#b45309':'#b91c1c';
+  const statBadge=st=>st==='critique'?'<span class="sb sb-critique">Critique</span>':st==='attention'?'<span class="sb sb-attention">Attention</span>':'<span class="sb sb-ok">OK</span>';
+  const isNew=id=>DB.employes[id]?.isNew;
+
+  document.getElementById('empBody').innerHTML=slice.map(e=>`<tr>
+    <td><div class="ename">${e.name}${isNew(e.id)?'<span class="new-tag">NOUVEAU</span>':''}</div><div class="eid">${e.id}</div></td>
+    <td><span class="db db-${e.dept}">${e.dept}</span></td>
+    <td style="font-weight:500;text-align:center">${e.presents}</td>
+    <td style="text-align:center;background:${e.absTotal>0?'#fdf2f8':''};color:${e.absTotal>5?'#9d174d':e.absTotal>2?'#be185d':'inherit'};font-weight:${e.absTotal>0?600:400}">${e.absTotal}</td>
+    <td style="text-align:center;background:${e.absAucun>0?'#fff1f2':''};color:${e.absAucun>3?'#881337':e.absAucun>0?'#b91c1c':'inherit'};font-weight:${e.absAucun>0?600:400}">${e.absAucun}</td>
+    <td style="text-align:center;background:${e.absDepart>0?'#f5f3ff':''};color:${e.absDepart>3?'#4c1d95':e.absDepart>0?'#7c3aed':'inherit'};font-weight:${e.absDepart>0?600:400}">${e.absDepart}</td>
+    <td style="text-align:center;background:${e.absArrivee>0?'#fffbeb':''};color:${e.absArrivee>2?'#78350f':e.absArrivee>0?'#b45309':'inherit'};font-weight:${e.absArrivee>0?600:400}">${e.absArrivee}</td>
+    <td style="text-align:center;color:${e.retards>=5?'#b91c1c':e.retards>=2?'#b45309':'inherit'};font-weight:${e.retards>=2?600:400}">${e.retards}</td>
+    <td style="text-align:center">${e.h_retard}h</td>
+    <td style="text-align:center">${e.h_travail}h</td>
+    <td><div class="taux-c"><div class="tbar"><div class="tfill" style="width:${e.taux}%;background:${tc(e.taux)}"></div></div><span class="tnum" style="color:${tc(e.taux)}">${e.taux}%</span></div></td>
+    <td>${statBadge(e.statut)}</td>
+  </tr></tr>`).join('');
+
+  const total=filtEmp.length,pages=Math.ceil(total/PER);
+  const epTag=document.getElementById('empPeriodTag');
+  const epValNow=document.getElementById('empPeriod')?.value||'';
+  const epPeriodLabel=epValNow?`Période : ${document.getElementById('empPeriod')?.options[document.getElementById('empPeriod').selectedIndex]?.text||epValNow}`:(activePeriod?`Période : ${document.getElementById('periodSelect')?.options[document.getElementById('periodSelect').selectedIndex]?.text||activePeriod}`:null);
+  if(epTag){epTag.style.display=epPeriodLabel?'inline-flex':'none';if(epPeriodLabel)epTag.innerHTML=`🗓 ${epPeriodLabel} <button onclick="document.getElementById('empPeriod').value='';empPage=0;renderEmp()">×</button>`;}
+  document.getElementById('empCount').textContent=`${start+1}–${Math.min(start+PER,total)} sur ${total}`;
+  document.getElementById('empPag').innerHTML=Array.from({length:pages},(_,i)=>
+    `<button class="pbtn${i===empPage?' active':''}" onclick="empPage=${i};renderEmp()">${i+1}</button>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// TABLE ABSENCES
+// ══════════════════════════════════════════════════════════════
+function renderAbs(){
+  if(!DB.rows.length){document.getElementById('absBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Aucune donnée</td></tr>';return;}
+  const q=document.getElementById('absQ').value.toLowerCase();
+  const d=document.getElementById('absDept').value;
+  const t=document.getElementById('absType').value;
+  const mo=document.getElementById('absMonth').value;
+
+  let absRows=DB.rows.filter(r=>{
+    if(DB.employes[r.id]?.validated===false) return false;
+    if(r.status!=='Absence') return false;
+    if(isJourNonOuvre(r.date)) return false; // Weekend ou jour férié
+    if(isEnConge(r.id, r.date)) return false; // Congé validé → pas une absence
+    if(q&&!r.name.toLowerCase().includes(q)) return false;
+    if(d&&(DB.employes[r.id]?.dept||r.dept)!==d) return false;
+    if(t&&absType(r)!==t) return false;  // filtre par type
+    if(mo&&!r.date.startsWith(mo)) return false;
+    return true;
+  });
+  // Enrichir avec dept et absType pour les filtres colonne
+  absRows=absRows.map(r=>({...r,dept:DB.employes[r.id]?.dept||r.dept,absType:absType(r)}));
+  absRows=applyColFilter(absRows,'abs',[{key:'dept',col:'dept'},{key:'absType',col:'absType'}]);
+  // Tri colonne
+  const csa=COL_SORT['abs'];
+  absRows=sortData(absRows,csa.col,csa.dir);
+  filtAbs=absRows;
+  const start=absPage*PER;
+  const slice=filtAbs.slice(start,start+PER);
+
+  document.getElementById('absBody').innerHTML=slice.map(r=>{
+    const dept=DB.employes[r.id]?.dept||r.dept;
+    const terr=DB.terrain.find(t=>t.id===r.id&&t.date===r.date);
+    const terrCell=terr
+      ?`<span class="sb sb-terrain">Terrain: ${terr.start||'?'}→${terr.end||'?'} (${terr.conf})</span>`
+      :`<button class="btn-sm btn-sm-ok" onclick="prefillTerrain('${r.id}','${r.date}')">+ Saisir</button>`;
+    return`<tr>
+      <td><div class="ename">${r.name}</div><div class="eid">${r.id}</div></td>
+      <td><span class="db db-${dept}">${dept}</span></td>
+      <td style="font-family:monospace;font-size:11px">${r.date}</td>
+      <td>${absTypeLbl(r)}</td>
+      <td style="font-weight:500;color:${r.checkin&&r.checkin!=='-'?'#15803d':'#b91c1c'}">${r.checkin&&r.checkin!=='-'?r.checkin:'✗ absent'}</td>
+      <td style="color:${r.checkout&&r.checkout!=='-'?'#15803d':'#7c3aed'}">${r.checkout&&r.checkout!=='-'?r.checkout:'✗ absent'}</td>
+      <td>${terrCell}</td>
+      <td><button class="btn-sm" style="background:var(--bg);border:1px solid var(--border)" onclick="openAbsDetail('${r.id}','${r.date}')">Détail</button></td>
+    </tr>`;
+  }).join('');
+
+  const total=filtAbs.length,pages=Math.ceil(total/PER);
+  document.getElementById('absCount').textContent=`${start+1}–${Math.min(start+PER,total)} sur ${total} absences`;
+  document.getElementById('absPag').innerHTML=Array.from({length:pages},(_,i)=>
+    `<button class="pbtn${i===absPage?' active':''}" onclick="absPage=${i};renderAbs()">${i+1}</button>`).join('');
+}
+
+function openAbsDetail(id,date){
+  const r=DB.rows.find(x=>x.id===id&&x.date===date);
+  if(!r) return;
+  const terr=DB.terrain.find(t=>t.id===id&&t.date===date);
+  document.getElementById('modalTerrainSub').textContent=`${r.name} · ${r.date}`;
+  document.getElementById('modalTerrainContent').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+      <div><strong>Statut iVMS</strong><br>${r.status}</div>
+      <div><strong>Type absence</strong><br>${absTypeLbl(r)||'—'}</div>
+      <div><strong>Check-In pointeuse</strong><br>${r.checkin||'—'}</div>
+      <div><strong>Check-Out pointeuse</strong><br>${r.checkout||'—'}</div>
+      ${terr?`<div><strong>Début terrain</strong><br>${terr.start||'—'}</div>
+              <div><strong>Fin terrain</strong><br>${terr.end||'—'}</div>
+              <div><strong>Confirmé par</strong><br>${terr.conf}</div>
+              <div><strong>Note</strong><br>${terr.note||'—'}</div>`:''}
+    </div>`;
+  document.getElementById('modalTerrain').classList.add('open');
+}
+
+// ══════════════════════════════════════════════════════════════
+// TABLE DÉTAIL
+// ══════════════════════════════════════════════════════════════
+function renderDet(){
+  if(!DB.rows.length){document.getElementById('detBody').innerHTML='<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--muted)">Aucune donnée</td></tr>';return;}
+  const q=document.getElementById('detQ').value.toLowerCase();
+  const d=document.getElementById('detDept').value;
+  const st=document.getElementById('detSt').value;
+  const mo=document.getElementById('detMonth').value;
+
+  let detRows=DB.rows.filter(r=>{
+    if(DB.employes[r.id]?.validated===false) return false;
+    if(q&&!r.name.toLowerCase().includes(q)&&!r.date.includes(q)) return false;
+    if(d&&(DB.employes[r.id]?.dept||r.dept)!==d) return false;
+    if(st==='ferie'){ if(!isFerie(r.date)) return false; } else if(st&&r.status!==st) return false;
+    if(mo&&!r.date.startsWith(mo)) return false;
+    return true;
+  });
+  // Enrichir avec dept pour filtres colonne
+  detRows=detRows.map(r=>({...r,dept:DB.employes[r.id]?.dept||r.dept}));
+  detRows=applyColFilter(detRows,'det',[{key:'dept',col:'dept'},{key:'status',col:'status'}]);
+  // Tri colonne
+  const csd=COL_SORT['det'];
+  filtDet=sortData(detRows,csd.col,csd.dir);
+
+  const start=detPage*PER;
+  const slice=filtDet.slice(start,start+PER);
+
+  document.getElementById('detBody').innerHTML=slice.map(r=>{
+    const dept=DB.employes[r.id]?.dept||r.dept;
+    const terr=DB.terrain.find(t=>t.id===r.id&&t.date===r.date);
+    const terrCell=terr?`<span class="sb sb-terrain" style="font-size:10px">Terrain ✓</span>`:'—';
+    return`<tr>
+      <td><div class="ename">${r.name}</div><div class="eid">${r.id}</div></td>
+      <td><span class="db db-${dept}">${dept}</span></td>
+      <td style="font-family:monospace;font-size:11px">${r.date}</td>
+      <td>${(()=>{
+        const conge=DB.conges.find(c=>c.id===r.id&&r.date>=c.dateFrom&&r.date<=c.dateTo);
+        if(conge){
+          const ct=CONGE_TYPES[conge.type]||{lbl:conge.type,cls:'ct-ex'};
+          return '<span class="conge-type-badge '+ct.cls+'">🏖 '+ct.lbl+'</span>';
+        }
+        if(isFerie(r.date)) return '<span class="sb" style="background:#f0fdf4;color:#15803d">🗓 Jour férié</span>';
+        if(isWeekend(r.date)||r.status==='No Shift Schedule') return '<span class="sb sb-nosh">Jour de repos</span>';
+        return stBadge(r.status);
+      })()}</td>
+      <td style="font-weight:500;color:${r.checkin&&r.checkin!=='-'?'#15803d':'#b91c1c'}">${r.checkin&&r.checkin!=='-'?r.checkin:'✗ absent'}</td>
+      <td style="color:${r.checkout&&r.checkout!=='-'?'#15803d':'#7c3aed'}">${r.checkout&&r.checkout!=='-'?r.checkout:'✗ absent'}</td>
+      <td style="color:${calcLateEffective(r.id,r.date,r.checkin)>0?'#b91c1c':'#94a3b8'}">${calcLateEffective(r.id,r.date,r.checkin)>0?calcLateEffective(r.id,r.date,r.checkin)+' min':'—'}</td>
+      <td style="color:${calcEarlyEffective(r.id,r.date,r.checkout)>0?'#b45309':'#94a3b8'}">${calcEarlyEffective(r.id,r.date,r.checkout)>0?calcEarlyEffective(r.id,r.date,r.checkout)+' min':'—'}</td>
+      <td>${calcWorkedMin(r.id,r.date,r.checkin,r.checkout)>0?calcWorkedMin(r.id,r.date,r.checkin,r.checkout)+' min':'—'}</td>
+      <td>${terrCell}</td>
+    </tr>`;
+  }).join('');
+
+  const total=filtDet.length,pages=Math.ceil(total/PER);
+  document.getElementById('detCount').textContent=`${start+1}–${Math.min(start+PER,total)} sur ${total}`;
+  document.getElementById('detPag').innerHTML=Array.from({length:pages},(_,i)=>
+    `<button class="pbtn${i===detPage?' active':''}" onclick="detPage=${i};renderDet()">${i+1}</button>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// ALERTES
+// ══════════════════════════════════════════════════════════════
+function buildAlertes(){
+  const rows=getRows();
+  if(!rows.length) return;
+  const s=computeStats(rows);
+  const rc=i=>i===0?'r1':i===1?'r2':i===2?'r3':'';
+
+  const topAbs=[...s.empList].sort((a,b)=>b.absTotal-a.absTotal).slice(0,10);
+  const topRet=[...s.empList].sort((a,b)=>b.retards-a.retards).slice(0,10);
+
+  document.getElementById('topAbs').innerHTML=topAbs.map((e,i)=>`
+    <div class="al-item">
+      <div class="al-rank ${rc(i)}">${i+1}</div>
+      <div class="al-info">
+        <div class="al-name">${e.name}</div>
+        <div class="al-sub" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:3px">
+          <span style="color:#881337;font-size:10px;font-weight:600">⬛ Aucun: ${e.absAucun}</span>
+          <span style="color:#7c3aed;font-size:10px;font-weight:600">🟣 Dép.: ${e.absDepart}</span>
+          <span style="color:#b45309;font-size:10px;font-weight:600">🟡 Arr.: ${e.absArrivee}</span>
+          <span style="color:var(--muted);font-size:10px">Taux ${e.taux}%</span>
+        </div>
+      </div>
+      <div class="al-val" style="color:${e.absTotal>5?'#9d174d':'#b45309'}">${e.absTotal}</div>
+    </div>`).join('');
+
+  document.getElementById('topRet').innerHTML=topRet.map((e,i)=>`
+    <div class="al-item">
+      <div class="al-rank ${rc(i)}">${i+1}</div>
+      <div class="al-info"><div class="al-name">${e.name}</div><div class="al-sub">${e.dept} · ${e.h_retard}h cumulées</div></div>
+      <div class="al-val" style="color:${e.retards>=5?'#b91c1c':'#b45309'}">${e.retards}</div>
+    </div>`).join('');
+
+  destroyChart('ret');
+  charts.ret=new Chart(document.getElementById('chartRet'),{
+    type:'bar',
+    data:{
+      labels:topAbs.map(e=>e.name.split(' ').slice(0,2).join(' ')),
+      datasets:[
+        {label:'Abs. sans pointage',data:topAbs.map(e=>e.absNoPoint),backgroundColor:'#ec4899',borderRadius:3},
+        {label:'Abs. partielles',data:topAbs.map(e=>e.absPartial),backgroundColor:'#a855f7',borderRadius:3},
+      ]
+    },
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:11}}}},
+      scales:{x:{stacked:true,grid:{color:'rgba(0,0,0,.05)'}},y:{stacked:true,grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// SAISIE TERRAIN
+// ══════════════════════════════════════════════════════════════
+function populateTerrainEmp(){
+  const sel=document.getElementById('terrEmp');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Sélectionner…</option>'+
+    Object.entries(DB.employes)
+      .filter(([,e])=>e.validated!==false)
+      .sort((a,b)=>a[1].name.localeCompare(b[1].name))
+      .map(([id,e])=>`<option value="${id}">${e.name} (${e.dept})</option>`).join('');
+  sel.value=cur;
+}
+
+function prefillTerrain(id,date){
+  // Basculer sur l'onglet terrain et préremplir
+  document.querySelectorAll('.tab').forEach(t=>{ if(t.textContent.includes('terrain')) t.click(); });
+  document.getElementById('terrEmp').value=id;
+  document.getElementById('terrDate').value=date;
+}
+
+function saveTerrain(){
+  const id=document.getElementById('terrEmp').value;
+  const date=document.getElementById('terrDate').value;
+  const start=document.getElementById('terrStart').value;
+  const end=document.getElementById('terrEnd').value;
+  const conf=document.getElementById('terrConf').value;
+  const note=document.getElementById('terrNote').value;
+  if(!id||!date){alert('Sélectionnez un employé et une date.');return;}
+  if(!start&&!end){alert('Saisissez au moins une heure (début ou fin).');return;}
+
+  // Supprimer l'ancienne saisie si elle existe
+  const idx=DB.terrain.findIndex(t=>t.id===id&&t.date===date);
+  const entry={id,name:DB.employes[id]?.name||id,dept:DB.employes[id]?.dept||'',date,start,end,conf,note};
+  if(idx>=0) DB.terrain[idx]=entry; else DB.terrain.push(entry);
+
+  // Vider le formulaire
+  document.getElementById('terrStart').value='';
+  document.getElementById('terrEnd').value='';
+  document.getElementById('terrNote').value='';
+  renderTerrain();
+  renderAbs();
+  renderDet();
+  alert('Saisie terrain enregistrée ✓');
+}
+
+function renderTerrain(){
+  const body=document.getElementById('terrBody');
+  if(!DB.terrain.length){
+    body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:1.5rem;color:var(--muted)">Aucune saisie terrain</td></tr>';
+    return;
+  }
+  body.innerHTML=[...DB.terrain].sort((a,b)=>b.date.localeCompare(a.date)).map((t,i)=>`<tr>
+    <td><div class="ename">${t.name}</div><div class="eid">${t.id}</div></td>
+    <td><span class="db db-${t.dept}">${t.dept}</span></td>
+    <td style="font-family:monospace;font-size:11px">${t.date}</td>
+    <td style="font-weight:500">${t.start||'—'}</td>
+    <td>${t.end||'—'}</td>
+    <td><span class="sb sb-terrain">${t.conf==='gps'?'GPS':t.conf==='responsable'?'Responsable':'RH'}</span></td>
+    <td style="font-size:11px;color:var(--muted)">${t.note||'—'}</td>
+    <td><button class="btn-sm btn-sm-no" onclick="deleteTerrain(${DB.terrain.indexOf(t)})">✗</button></td>
+  </tr>`).join('');
+}
+
+function deleteTerrain(i){ DB.terrain.splice(i,1); renderTerrain(); renderAbs(); }
+
+// ══════════════════════════════════════════════════════════════
+// FICHIERS LIST
+// ══════════════════════════════════════════════════════════════
+function renderFilesList(){
+  const sil=document.getElementById('storageInfoLabel');
+  if(sil) sil.textContent='💾 Stockage local : '+storageInfo();
+  const el=document.getElementById('filesList');
+  el.innerHTML=DB.fichiers.map((f,i)=>`
+    <div class="file-item">
+      <div class="file-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 4a2 2 0 012-2h5l5 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="#15803d" stroke-width="1.5"/></svg></div>
+      <div style="flex:1"><div class="file-name">${f.name}</div><div class="file-meta">${f.rows} lignes · ${f.date}</div></div>
+      <button class="btn-rm" onclick="removeFile(${i})" title="Retirer">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+function removeFile(i){
+  if(!confirm(`Retirer "${DB.fichiers[i].name}" ?`)) return;
+  DB.fichiers.splice(i,1);
+  if(!DB.fichiers.length){DB.rows=[];DB.employes={};DB.terrain=[];DB.pendingEmps=[];
+    document.getElementById('importEmpty').style.display='block';}
+  refreshAll();
+}
+
+// ══════════════════════════════════════════════════════════════
+// FILTRES
+// ══════════════════════════════════════════════════════════════
+function populateFilters(){
+  const depts=[...new Set(Object.values(DB.employes).filter(e=>e.validated!==false).map(e=>e.dept))].sort();
+  const months=getMonths();
+  ['empDept','detDept','absDept'].forEach(id=>{
+    const sel=document.getElementById(id);const cur=sel.value;
+    sel.innerHTML='<option value="">Tous</option>'+depts.map(d=>`<option value="${d}">${d}</option>`).join('');
+    sel.value=cur;
+  });
+  ['detMonth','absMonth'].forEach(id=>{
+    const sel=document.getElementById(id);const cur=sel.value;
+    sel.innerHTML='<option value="">Tous les mois</option>'+months.map(m=>{
+      const[y,mo]=m.split('-');
+      const lbl=new Date(y,parseInt(mo)-1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+      return`<option value="${m}">${lbl.charAt(0).toUpperCase()+lbl.slice(1)}</option>`;
+    }).join('');
+    sel.value=cur;
+  });
+}
+
+
+
+// ══════════════════════════════════════════════════════════════
+// ADMIN — GESTION MONITORING
+// ══════════════════════════════════════════════════════════════
+let adminFiltered = [];
+
+function renderAdmin(){
+  const q  = document.getElementById('adminQ').value.toLowerCase();
+  const d  = document.getElementById('adminDept').value;
+  const f  = document.getElementById('adminFilter').value;
+
+  const all = Object.entries(DB.employes)
+    .filter(([,e]) => e.validated !== false)
+    .map(([id,e]) => ({id, ...e}));
+
+  adminFiltered = all.filter(e =>
+    (!q || e.name.toLowerCase().includes(q) || e.id.includes(q)) &&
+    (!d || e.dept === d) &&
+    (!f || (f==='excluded' ? e.excluded : !e.excluded))
+  ).sort((a,b) => {
+    if(a.excluded !== b.excluded) return a.excluded ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Stats bar
+  const totalIncl = all.filter(e=>!e.excluded).length;
+  const totalExcl = all.filter(e=>e.excluded).length;
+  document.getElementById('adminStatsBar').innerHTML = `
+    <span>Total : <strong>${all.length}</strong></span>
+    <span style="color:var(--green)">Inclus : <strong>${totalIncl}</strong></span>
+    <span style="color:var(--red)">Exclus : <strong>${totalExcl}</strong></span>
+    <span style="color:var(--muted)">Résultats filtrés : <strong>${adminFiltered.length}</strong></span>
+  `;
+
+  // Départements pour le filtre
+  const depts = [...new Set(all.map(e=>e.dept))].sort();
+  const deptSel = document.getElementById('adminDept');
+  const cur = deptSel.value;
+  deptSel.innerHTML = '<option value="">Tous les départements</option>' +
+    depts.map(dep => `<option value="${dep}">${dep}</option>`).join('');
+  deptSel.value = cur;
+
+  if(!adminFiltered.length){
+    document.getElementById('adminList').innerHTML =
+      '<div class="empty-state" style="padding:2rem"><p>Aucun employé trouvé</p></div>';
+    return;
+  }
+
+  document.getElementById('adminList').innerHTML = adminFiltered.map(e => `
+    <div class="admin-emp-row ${e.excluded?'excluded':''}" id="arow-${e.id}">
+      <input type="checkbox" class="admin-chk" data-id="${e.id}"
+        style="accent-color:var(--blue);width:14px;height:14px;cursor:pointer"
+        onchange="adminChkChange()">
+      <div class="emp-info">
+        <div class="ename" style="font-size:13px">${e.name}
+          ${e.isNew?'<span class="new-tag">NOUVEAU</span>':''}
+          ${e.excluded?'<span class="excl-badge excl" style="margin-left:6px">Exclu</span>':''}
+        </div>
+        <div class="eid">ID : ${e.id}</div>
+      </div>
+      <select class="emp-dept-sel" onchange="adminChangeDept('${e.id}',this.value)">
+        ${['AOE','GES','GA'].map(dep=>`<option value="${dep}" ${e.dept===dep?'selected':''}>${dep}</option>`).join('')}
+      </select>
+      <span class="excl-badge ${e.excluded?'excl':'incl'}">${e.excluded?'Exclu du monitoring':'Suivi actif'}</span>
+      <button class="toggle-monitor ${e.excluded?'excl':'incl'}"
+        onclick="adminToggleOne('${e.id}')">
+        ${e.excluded?'↩ Réintégrer':'✗ Exclure'}
+      </button>
+    </div>`).join('');
+
+  adminChkChange(); // recalc sélection
+}
+
+function adminToggleOne(id){
+  if(!DB.employes[id]) return;
+  const wasExcluded = DB.employes[id].excluded;
+  if(!wasExcluded){
+    if(!confirm(`Exclure "${DB.employes[id].name}" du monitoring ?
+Ses données ne seront plus comptabilisées dans les tableaux et statistiques.`)) return;
+  }
+  DB.employes[id].excluded = !wasExcluded;
+  renderAdmin();
+  refreshAll();
+}
+
+function adminChangeDept(id, dept){
+  if(!DB.employes[id]) return;
+  DB.employes[id].dept = dept;
+  // Mettre à jour aussi les lignes de pointage
+  DB.rows.forEach(r=>{ if(r.id===id) r.dept=dept; });
+  refreshAll();
+}
+
+function adminToggleAll(checked){
+  document.querySelectorAll('.admin-chk').forEach(c => c.checked = checked);
+  adminChkChange();
+}
+
+function adminChkChange(){
+  const chks = [...document.querySelectorAll('.admin-chk')];
+  const n = chks.filter(c=>c.checked).length;
+  document.getElementById('adminSelCount').textContent = `${n} sélectionné${n>1?'s':''}`;
+  const all = document.getElementById('adminChkAll');
+  if(all){ all.checked = n===chks.length&&chks.length>0; all.indeterminate = n>0&&n<chks.length; }
+  const active = n > 0;
+  ['btnAdminIncl','btnAdminExcl'].forEach(bid=>{
+    const b = document.getElementById(bid);
+    if(b){ b.classList.toggle('disabled', !active); }
+  });
+}
+
+function adminBulkAction(include){
+  const ids = [...document.querySelectorAll('.admin-chk:checked')].map(c=>c.dataset.id);
+  if(!ids.length) return;
+  const action = include ? 'réintégrer' : 'exclure';
+  if(!confirm(`${action.charAt(0).toUpperCase()+action.slice(1)} ${ids.length} employé(s) ${include?'dans':'du'} monitoring ?`)) return;
+  ids.forEach(id=>{ if(DB.employes[id]) DB.employes[id].excluded = !include; });
+  // Décocher tout
+  document.querySelectorAll('.admin-chk').forEach(c=>c.checked=false);
+  const all = document.getElementById('adminChkAll');
+  if(all){all.checked=false;all.indeterminate=false;}
+  adminChkChange();
+  renderAdmin();
+  refreshAll();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// CONFIG GLOBALE
+// ══════════════════════════════════════════════════════════════
+const CFG = {
+  globalTolerance: 0,           // minutes de tolérance retard globale
+  schedules: {},                 // id → {start:'08:00', end:'17:30', breakMin:0}
+  tolerances: {},                // id → minutes (override globale)
+  activeHolidays: new Set(),     // Set de dates 'YYYY-MM-DD' fériées actives
+  customHolidays: [],            // [{date,name}] ajouts manuels
+};
+
+// Horaires officiels selon le jour de la semaine
+// Lun-Jeu : 8h00→13h00 (5h) + 14h30→17h30 (3h) = 8h travail, pause 1h30
+// Vendredi : 8h00→13h00 (5h) + 15h00→18h00 (3h) = 8h travail, pause 2h
+const DEFAULT_SCHED_STD = { start:'08:00', end:'17:30', breakMin:90,  totalMin:480 }; // Lun-Jeu  : 480min = 8h
+const DEFAULT_SCHED_VEN = { start:'08:00', end:'18:00', breakMin:120, totalMin:480 }; // Vendredi : 480min = 8h
+
+function isVendredi(dateStr){
+  if(!dateStr) return false;
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.getDay() === 5;
+}
+
+function getDefaultSched(dateStr){
+  return isVendredi(dateStr) ? DEFAULT_SCHED_VEN : DEFAULT_SCHED_STD;
+}
+
+// Durée standard en minutes pour un employé (tient compte du jour et des horaires aménagés)
+function getShiftMin(id, dateStr){
+  if(CFG.schedules[id]){
+    // Horaire personnalisé
+    const s = CFG.schedules[id];
+    const [sh,sm] = s.start.split(':').map(Number);
+    const [eh,em] = s.end.split(':').map(Number);
+    return (eh*60+em) - (sh*60+sm) - (s.breakMin||0);
+  }
+  const def = getDefaultSched(dateStr);
+  return def.totalMin; // 480 min = 8h
+}
+
+// Tolérance retard pour un employé (individuelle ou globale)
+function getTolerance(id){
+  if(CFG.tolerances[id] !== undefined && CFG.tolerances[id] !== '') return parseInt(CFG.tolerances[id])||0;
+  return CFG.globalTolerance||0;
+}
+
+// Vérifier si un jour est férié actif
+// Utilise CFG.activeHolidays (initialisé par initDefaultHolidays)
+// + vérification de secours sur les fériés fixes hardcodés
+const _FERIES_MJ_HARDCODED = new Set(['01-01','04-04','05-01','08-15','11-01','12-25']);
+const _FERIES_MOBILES_HARDCODED = new Set([
+  '2026-01-14','2026-03-20','2026-04-03','2026-04-05','2026-04-06',
+  '2026-05-14','2026-05-25','2026-06-11','2027-01-01'
+]);
+function isFerie(date){
+  if(!date||date.length<10) return false;
+  // 1. Fériés fixes par MM-JJ (toutes années)
+  if(_FERIES_MJ_HARDCODED.has(date.slice(5))) return true;
+  // 2. Fériés mobiles connus
+  if(_FERIES_MOBILES_HARDCODED.has(date)) return true;
+  // 3. Fériés personnalisés ajoutés par l'admin
+  if(CFG.customHolidays.some(h=>h.date===date)) return true;
+  return false;
+}
+
+// Vérifier si un jour est un weekend (samedi=6, dimanche=0 en JS)
+function isWeekend(date){
+  if(!date||date.length<10) return false;
+  const d = new Date(date+'T12:00:00');
+  return d.getDay()===0 || d.getDay()===6;
+}
+
+// Vérifier si un jour ne doit PAS compter (repos ou férié)
+function isJourNonOuvre(date){
+  return isWeekend(date) || isFerie(date);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// CALCULS INDÉPENDANTS D'iVMS — tout recalculé depuis CheckIn/CheckOut
+// ══════════════════════════════════════════════════════════════
+
+// Convertit "HH:MM:SS" ou "HH:MM" en minutes depuis minuit (null si vide)
+function timeToMin(t){
+  if(!t||t==='-'||t===''||t==='nan') return null;
+  const p=String(t).split(':').map(Number);
+  return p[0]*60+(p[1]||0);
+}
+
+// Heure de début de shift en minutes (personnalisé ou 08:00)
+function getShiftStartMin(id){
+  if(CFG.schedules[id]) return timeToMin(CFG.schedules[id].start||'08:00');
+  return timeToMin('08:00');
+}
+
+// Heure de fin de shift en minutes selon le jour (personnalisé ou standard)
+function getShiftEndMin(id, dateStr){
+  if(CFG.schedules[id]) return timeToMin(CFG.schedules[id].end||'17:30');
+  const d = new Date((dateStr||'')+'T12:00:00');
+  return d.getDay()===5 ? timeToMin('18:00') : timeToMin('17:30');
+}
+
+// Durée de pause en minutes selon le jour (personnalisée ou standard)
+function getBreakMin(id, dateStr){
+  if(CFG.schedules[id]) return CFG.schedules[id].breakMin||90;
+  const d = new Date((dateStr||'')+'T12:00:00');
+  return d.getDay()===5 ? 120 : 90; // Vendredi=2h, autres=1h30
+}
+
+// ── RETARD ────────────────────────────────────────────────────
+// Recalculé depuis CheckIn réel (ignore colonne iVMS qui a sa propre tolérance)
+function calcLateEffective(id, dateStr, checkin){
+  const ci = timeToMin(checkin);
+  if(ci===null) return 0;
+  const rawLate = ci - getShiftStartMin(id);
+  if(rawLate<=0) return 0;
+  return Math.max(0, rawLate - getTolerance(id));
+}
+
+// ── DÉPART ANTICIPÉ ───────────────────────────────────────────
+// Recalculé depuis CheckOut réel vs fin de shift officielle
+function calcEarlyEffective(id, dateStr, checkout){
+  const co = timeToMin(checkout);
+  if(co===null) return 0;
+  const shiftEnd = getShiftEndMin(id, dateStr);
+  return Math.max(0, shiftEnd - co);
+}
+
+// ── TEMPS TRAVAILLÉ ───────────────────────────────────────────
+// Recalculé : (CheckOut - CheckIn) - pause officielle
+// iVMS calcule brut sans déduire la pause → nos valeurs sont correctes
+function calcWorkedMin(id, dateStr, checkin, checkout){
+  const ci = timeToMin(checkin);
+  const co = timeToMin(checkout);
+  if(ci===null||co===null) return 0;
+  const brut = co - ci;
+  if(brut<=0) return 0;
+  const pause = getBreakMin(id, dateStr);
+  return Math.max(0, brut - pause);
+}
+
+// ── HEURES SUPPLÉMENTAIRES ────────────────────────────────────
+// Heures sup = temps travaillé - durée standard du shift
+function calcOvertimeMin(id, dateStr, checkin, checkout){
+  const worked = calcWorkedMin(id, dateStr, checkin, checkout);
+  const standard = getShiftMin(id, dateStr);
+  return worked - standard; // peut être négatif
+}
+
+// ── JOURS FÉRIÉS SÉNÉGAL ─────────────────────────────────────
+// Base fixe (récurrents chaque année)
+const FERIES_SENEGAL_FIXES = [
+  {mois:'01',jour:'01', nom:"Jour de l\u0027An"},
+  {mois:'04',jour:'04', nom:'Journ\u00e9e nationale du S\u00e9n\u00e9gal'},
+  {mois:'05',jour:'01', nom:'Fête du Travail'},
+  {mois:'08',jour:'15', nom:'Assomption'},
+  {mois:'11',jour:'01', nom:'Toussaint'},
+  {mois:'12',jour:'25', nom:'Noël'},
+];
+// Fêtes mobiles 2026 (islamiques et chrétiennes)
+const FERIES_SENEGAL_2026 = [
+  {date:'2026-01-14', nom:'Tamkharit (Achoura)'},
+  {date:'2026-03-20', nom:'Maouloud (Naissance du Prophète)'},
+  {date:'2026-04-03', nom:'Vendredi Saint'},
+  {date:'2026-04-06', nom:'Lundi de Pâques'},
+  {date:'2026-04-05', nom:'Korité (Aïd el-Fitr)'},
+  {date:'2026-05-14', nom:'Ascension'},
+  {date:'2026-05-25', nom:'Lundi de Pentecôte'},
+  {date:'2026-06-11', nom:'Tabaski (Aïd el-Kébir)'},
+  {date:'2027-01-01', nom:"Jour de l'An 2027"},
+];
+
+(function initDefaultHolidays(){
+  // Charger les fériés fixes pour 5 ans (passé et futur) pour couvrir congés historiques
+  const curYear = new Date().getFullYear();
+  for(let y = curYear-3; y <= curYear+2; y++){
+    const year = y.toString();
+    FERIES_SENEGAL_FIXES.forEach(f=>{
+      CFG.activeHolidays.add(`${year}-${f.mois}-${f.jour}`);
+    });
+  }
+  // Fériés mobiles connus (spécifiques à 2026)
+  FERIES_SENEGAL_2026.forEach(f=>{ CFG.activeHolidays.add(f.date); });
+})();
+
+function buildHolidayList(year){
+  const list = [];
+  // Fixes
+  FERIES_SENEGAL_FIXES.forEach(f=>{
+    list.push({date:`${year}-${f.mois}-${f.jour}`, nom:f.nom, fixed:true});
+  });
+  // Mobiles pour l'année
+  FERIES_SENEGAL_2026.forEach(f=>{
+    if(f.date.startsWith(year)) list.push({...f, fixed:false});
+  });
+  // Custom
+  CFG.customHolidays.forEach(f=>{
+    if(f.date.startsWith(year)) list.push({...f, custom:true});
+  });
+  return list.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function renderHolidays(){
+  // Détecter les années : données importées + congés saisis + année courante
+  const yearsSet = new Set([
+    ...DB.rows.map(r=>r.date.slice(0,4)),
+    ...DB.conges.map(c=>[c.dateFrom.slice(0,4), c.dateTo.slice(0,4)]).flat(),
+    new Date().getFullYear().toString()
+  ]);
+  const years = [...yearsSet].sort();
+
+  const grid = document.getElementById('holidayGrid');
+  if(!grid) return;
+
+  let html = '';
+  years.forEach(year=>{
+    const list = buildHolidayList(year);
+    if(years.length>1) html += `<div style="grid-column:1/-1;font-size:11px;font-weight:700;color:var(--navy);padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:4px">${year}</div>`;
+    list.forEach(h=>{
+      const checked = CFG.activeHolidays.has(h.date);
+      const _d = new Date(h.date+'T12:00:00'); const dayName = _d.toLocaleDateString('fr-FR',{weekday:'short'}); const _isWE = _d.getDay()===0||_d.getDay()===6;
+      const dispDate = new Date(h.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long'});
+      html += `<label class="holiday-item" style="cursor:pointer">
+        <input type="checkbox" ${checked?'checked':''} onchange="toggleHoliday('${h.date}',this.checked)">
+        <div class="hd">
+          <div class="hd-name">${h.nom}${h.custom?'<span style="font-size:9px;background:#ede9fe;color:#7c3aed;padding:1px 5px;border-radius:4px;margin-left:5px">Custom</span>':''}</div>
+          <div class="hd-date">${dayName} ${dispDate}${_isWE?' <span style="font-size:9px;color:#94a3b8">(weekend)</span>':''}</div>
+        </div>
+      </label>`;
+    });
+  });
+  grid.innerHTML = html;
+  renderCustomHolidayList();
+}
+
+function toggleHoliday(date, checked){
+  if(checked) CFG.activeHolidays.add(date);
+  else CFG.activeHolidays.delete(date);
+  refreshAll();
+}
+
+function addCustomHoliday(){
+  const date = document.getElementById('customHolidayDate').value;
+  const name = document.getElementById('customHolidayName').value.trim();
+  if(!date || !name){ alert('Saisissez une date et un nom.'); return; }
+  if(CFG.customHolidays.find(h=>h.date===date)){ alert('Ce jour est déjà ajouté.'); return; }
+  CFG.customHolidays.push({date, nom:name});
+  CFG.activeHolidays.add(date);
+  document.getElementById('customHolidayDate').value='';
+  document.getElementById('customHolidayName').value='';
+  renderHolidays();
+  refreshAll();
+}
+
+function renderCustomHolidayList(){
+  const el = document.getElementById('customHolidayList');
+  if(!el) return;
+  el.innerHTML = CFG.customHolidays.map(h=>`
+    <div class="custom-holiday-tag">
+      ${h.nom} · ${new Date(h.date+'T12:00:00').toLocaleDateString('fr-FR')}
+      <button onclick="removeCustomHoliday('${h.date}')">×</button>
+    </div>`).join('');
+}
+
+function removeCustomHoliday(date){
+  CFG.customHolidays = CFG.customHolidays.filter(h=>h.date!==date);
+  CFG.activeHolidays.delete(date);
+  renderHolidays();
+  refreshAll();
+}
+
+// ── HORAIRES AMÉNAGÉS ─────────────────────────────────────────
+function renderSchedules(){
+  const q = document.getElementById('schedQ')?.value.toLowerCase()||'';
+  const d = document.getElementById('schedDept')?.value||'';
+  const f = document.getElementById('schedFilter')?.value||'';
+
+  const emps = Object.entries(DB.employes)
+    .filter(([,e])=>e.validated!==false&&!e.excluded)
+    .map(([id,e])=>({id,...e}))
+    .filter(e=>(!q||e.name.toLowerCase().includes(q))&&(!d||e.dept===d)&&(!f||(f==='custom'&&CFG.schedules[e.id])));
+
+  // Filtre dept
+  const depts=[...new Set(Object.values(DB.employes).filter(e=>e.validated!==false&&!e.excluded).map(e=>e.dept))].sort();
+  const sd=document.getElementById('schedDept');
+  if(sd){const cur=sd.value;sd.innerHTML='<option value="">Tous</option>'+depts.map(dep=>`<option value="${dep}">${dep}</option>`).join('');sd.value=cur;}
+
+  const el = document.getElementById('schedList');
+  if(!el) return;
+  if(!emps.length){el.innerHTML='<div class="empty-state" style="padding:2rem"><p>Aucun employé</p></div>';return;}
+
+  el.innerHTML = emps.sort((a,b)=>a.name.localeCompare(b.name)).map(e=>{
+    const s = CFG.schedules[e.id] || null;
+    const isCustom = !!CFG.schedules[e.id];
+    // Afficher les horaires par défaut Lun-Jeu (référence pour l'UI)
+    const defSched = DEFAULT_SCHED_STD;
+    const dispSched = s || defSched;
+    const [sh,sm]=(dispSched.start||'08:00').split(':').map(Number);
+    const [eh,em]=(dispSched.end||'17:30').split(':').map(Number);
+    const durH = s ? ((eh*60+em)-(sh*60+sm)-(s.breakMin||0))/60 : 8.0;
+    return `<div class="emp-schedule-row ${isCustom?'custom':''}">
+      <div>
+        <div class="ename" style="font-size:12px">${e.name}</div>
+        <div class="eid">${e.dept}</div>
+      </div>
+      <input type="time" class="sched-input ${isCustom?'custom-val':''}" value="${dispSched.start||'08:00'}"
+        onchange="saveSchedule('${e.id}','start',this.value)" id="s-start-${e.id}">
+      <input type="time" class="sched-input ${isCustom?'custom-val':''}" value="${dispSched.end||'17:30'}"
+        onchange="saveSchedule('${e.id}','end',this.value)" id="s-end-${e.id}">
+      <input type="number" class="sched-input ${isCustom?'custom-val':''}" value="${dispSched.breakMin||90}" min="0" max="240"
+        onchange="saveSchedule('${e.id}','breakMin',parseInt(this.value)||0)" placeholder="90">
+      <div style="text-align:center;font-size:12px;font-weight:500;color:${isCustom?'var(--blue)':'var(--muted)'}">
+        ${durH.toFixed(1)}h${!isCustom?'<div style="font-size:9px;color:var(--muted);margin-top:2px">Lun-Jeu / Ven diff.</div>':''}</div>
+      <button class="btn-reset-sched" onclick="resetSchedule('${e.id}')" ${!isCustom?'disabled style="opacity:.3"':''}>
+        ↺ Réinitialiser
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function saveSchedule(id, field, value){
+  if(!CFG.schedules[id]) CFG.schedules[id] = {...DEFAULT_SCHED};
+  CFG.schedules[id][field] = value;
+  renderSchedules();
+  refreshAll();
+}
+
+function resetSchedule(id){
+  delete CFG.schedules[id];
+  renderSchedules();
+  refreshAll();
+}
+
+// ── TOLÉRANCE RETARD ──────────────────────────────────────────
+function saveGlobalTolerance(){
+  CFG.globalTolerance = parseInt(document.getElementById('globalTolerance').value)||0;
+  renderTolerances();
+  refreshAll();
+}
+
+function renderTolerances(){
+  const emps = Object.entries(DB.employes)
+    .filter(([,e])=>e.validated!==false&&!e.excluded)
+    .map(([id,e])=>({id,...e}))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+
+  const el = document.getElementById('toleranceList');
+  if(!el) return;
+  if(!emps.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:10px 0">Aucun employé chargé.</div>';return;}
+
+  el.innerHTML = emps.map(e=>{
+    const val = CFG.tolerances[e.id];
+    const hasCustom = val!==undefined&&val!=='';
+    return `<div class="setting-row" style="padding:10px 0">
+      <div class="setting-info">
+        <strong style="font-size:12px">${e.name}</strong>
+        <span>${e.dept} · Tolérance effective : ${hasCustom?val:CFG.globalTolerance} min ${hasCustom?'<span style="color:var(--blue);font-size:10px">(individuelle)</span>':'<span style="color:var(--muted);font-size:10px">(globale)</span>'}</span>
+      </div>
+      <div class="setting-ctrl">
+        <input type="number" min="0" max="120" value="${val!==undefined&&val!==''?val:''}" placeholder="${CFG.globalTolerance}"
+          style="width:70px" onchange="saveTolerance('${e.id}',this.value)">
+        <span class="setting-unit">min</span>
+        ${hasCustom?`<button class="btn-reset-sched" onclick="resetTolerance('${e.id}')">↺</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function saveTolerance(id, val){
+  if(val===''||val===null) delete CFG.tolerances[id];
+  else CFG.tolerances[id] = parseInt(val)||0;
+  renderTolerances();
+  refreshAll();
+}
+
+function resetTolerance(id){
+  delete CFG.tolerances[id];
+  renderTolerances();
+  refreshAll();
+}
+
+// ── SWITCH PANELS ADMIN ───────────────────────────────────────
+function switchAdminTab(name, el){
+  document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('apanel-'+name).classList.add('active');
+  if(name==='horaires') renderSchedules();
+  if(name==='retard') renderTolerances();
+  if(name==='feries') renderHolidays();
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// MODE PLEINE PAGE
+// ══════════════════════════════════════════════════════════════
+let currentFs = null;
+
+function openFullscreen(tbl){
+  closeFullscreen();
+  currentFs = tbl;
+  document.body.classList.add('has-fullscreen');
+  const el = document.getElementById('fs-'+tbl);
+  if(el) el.classList.add('active');
+  // Remplir le tableau complet (toutes les lignes, pas de pagination)
+  if(tbl==='emp') renderFsEmp();
+  else if(tbl==='abs') renderFsAbs();
+  else if(tbl==='det') renderFsDet();
+  // Escape pour quitter
+  document.addEventListener('keydown', fsEscHandler);
+}
+
+function closeFullscreen(){
+  if(currentFs){
+    document.getElementById('fs-'+currentFs)?.classList.remove('active');
+    currentFs = null;
+  }
+  document.body.classList.remove('has-fullscreen');
+  document.removeEventListener('keydown', fsEscHandler);
+}
+
+function fsEscHandler(e){ if(e.key==='Escape') closeFullscreen(); }
+
+function renderFsEmp(){
+  const rows = getRows();
+  if(!rows.length) return;
+  const s = computeStats(rows);
+  const q  = document.getElementById('empQ').value.toLowerCase();
+  const d  = document.getElementById('empDept').value;
+  const so = document.getElementById('empSort').value;
+  let data = s.empList.filter(e=>(!q||e.name.toLowerCase().includes(q)||e.id.includes(q))&&(!d||e.dept===d));
+  data = applyColFilter(data,'emp',[{key:'dept',col:'dept'},{key:'statut',col:'statut'}]);
+  const cs=COL_SORT['emp'];
+  data = sortData(data,cs.col,cs.dir);
+  const tc=t=>t>=80?'#15803d':t>=60?'#b45309':'#b91c1c';
+  const statBadge=st=>st==='critique'?'<span class="sb sb-critique">Critique</span>':st==='attention'?'<span class="sb sb-attention">Attention</span>':'<span class="sb sb-ok">OK</span>';
+  document.getElementById('fsEmpInfo').textContent = `${data.length} employés`;
+  document.getElementById('fsEmpBody').innerHTML = data.map(e=>`<tr>
+    <td><div class="ename">${e.name}</div><div class="eid">${e.id}</div></td>
+    <td><span class="db db-${e.dept}">${e.dept}</span></td>
+    <td style="text-align:center;font-weight:500">${e.presents}</td>
+    <td style="text-align:center;background:${e.absTotal>0?'#fdf2f8':''};color:${e.absTotal>5?'#9d174d':e.absTotal>2?'#be185d':'inherit'};font-weight:${e.absTotal>0?600:400}">${e.absTotal}</td>
+    <td style="text-align:center;background:${e.absAucun>0?'#fff1f2':''};color:${e.absAucun>3?'#881337':e.absAucun>0?'#b91c1c':'inherit'};font-weight:${e.absAucun>0?600:400}">${e.absAucun}</td>
+    <td style="text-align:center;background:${e.absDepart>0?'#f5f3ff':''};color:${e.absDepart>0?'#7c3aed':'inherit'};font-weight:${e.absDepart>0?600:400}">${e.absDepart}</td>
+    <td style="text-align:center;background:${e.absArrivee>0?'#fffbeb':''};color:${e.absArrivee>0?'#b45309':'inherit'};font-weight:${e.absArrivee>0?600:400}">${e.absArrivee}</td>
+    <td style="text-align:center;color:${e.retards>=5?'#b91c1c':e.retards>=2?'#b45309':'inherit'};font-weight:${e.retards>=2?600:400}">${e.retards}</td>
+    <td style="text-align:center">${e.h_retard}h</td>
+    <td style="text-align:center">${e.h_travail}h</td>
+    <td style="text-align:center">${e.conges>0?`<span class="conge-badge">🏖 ${e.conges}j</span>`:'—'}</td>
+    <td><div class="taux-c"><div class="tbar"><div class="tfill" style="width:${e.taux}%;background:${tc(e.taux)}"></div></div><span class="tnum" style="color:${tc(e.taux)}">${e.taux}%</span></div></td>
+    <td>${statBadge(e.statut)}</td>
+  </tr>`).join('');
+}
+
+function renderFsAbs(){
+  const q  = document.getElementById('absQ').value.toLowerCase();
+  const d  = document.getElementById('absDept').value;
+  const t  = document.getElementById('absType').value;
+  const mo = document.getElementById('absMonth').value;
+  let data = DB.rows.filter(r=>{
+    if(DB.employes[r.id]?.validated===false) return false;
+    if(r.status!=='Absence') return false;
+    if(isFerie(r.date)) return false;
+    if(q&&!r.name.toLowerCase().includes(q)) return false;
+    if(d&&(DB.employes[r.id]?.dept||r.dept)!==d) return false;
+    if(t&&absType(r)!==t) return false;
+    if(mo&&!r.date.startsWith(mo)) return false;
+    return true;
+  }).map(r=>({...r,dept:DB.employes[r.id]?.dept||r.dept,absType:absType(r)}));
+  data = applyColFilter(data,'abs',[{key:'dept',col:'dept'},{key:'absType',col:'absType'}]);
+  const csa=COL_SORT['abs']; data=sortData(data,csa.col,csa.dir);
+  document.getElementById('fsAbsInfo').textContent=`${data.length} absences`;
+  document.getElementById('fsAbsBody').innerHTML=data.map(r=>{
+    const dept=DB.employes[r.id]?.dept||r.dept;
+    const terr=DB.terrain.find(t=>t.id===r.id&&t.date===r.date);
+    const terrCell=terr?`<span class="sb sb-terrain">Terrain ✓</span>`:`<button class="btn-sm btn-sm-ok" onclick="prefillTerrain('${r.id}','${r.date}')">+ Saisir</button>`;
+    return`<tr>
+      <td><div class="ename">${r.name}</div><div class="eid">${r.id}</div></td>
+      <td><span class="db db-${dept}">${dept}</span></td>
+      <td style="font-family:monospace;font-size:11px">${r.date}</td>
+      <td>${absTypeLbl(r)}</td>
+      <td style="color:${r.checkin&&r.checkin!=='-'?'#15803d':'#b91c1c'}">${r.checkin&&r.checkin!=='-'?r.checkin:'✗ absent'}</td>
+      <td style="color:${r.checkout&&r.checkout!=='-'?'#15803d':'#7c3aed'}">${r.checkout&&r.checkout!=='-'?r.checkout:'✗ absent'}</td>
+      <td>${terrCell}</td>
+      <td><button class="btn-sm" style="background:var(--bg);border:1px solid var(--border)" onclick="openAbsDetail('${r.id}','${r.date}')">Détail</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderFsDet(){
+  const q  = document.getElementById('detQ').value.toLowerCase();
+  const d  = document.getElementById('detDept').value;
+  const st = document.getElementById('detSt').value;
+  const mo = document.getElementById('detMonth').value;
+  let data = DB.rows.filter(r=>{
+    if(DB.employes[r.id]?.validated===false) return false;
+    if(q&&!r.name.toLowerCase().includes(q)&&!r.date.includes(q)) return false;
+    if(d&&(DB.employes[r.id]?.dept||r.dept)!==d) return false;
+    if(st==='ferie'){if(!isFerie(r.date)) return false;}
+    else if(st&&r.status!==st) return false;
+    if(mo&&!r.date.startsWith(mo)) return false;
+    return true;
+  }).map(r=>({...r,dept:DB.employes[r.id]?.dept||r.dept}));
+  data = applyColFilter(data,'det',[{key:'dept',col:'dept'},{key:'status',col:'status'}]);
+  const csd=COL_SORT['det']; data=sortData(data,csd.col,csd.dir);
+  document.getElementById('fsDetInfo').textContent=`${data.length} lignes`;
+  document.getElementById('fsDetBody').innerHTML=data.map(r=>{
+    const dept=DB.employes[r.id]?.dept||r.dept;
+    const terr=DB.terrain.find(t=>t.id===r.id&&t.date===r.date);
+    return`<tr>
+      <td><div class="ename">${r.name}</div><div class="eid">${r.id}</div></td>
+      <td><span class="db db-${dept}">${dept}</span></td>
+      <td style="font-family:monospace;font-size:11px">${r.date}</td>
+      <td>${(()=>{
+        const conge=DB.conges.find(c=>c.id===r.id&&r.date>=c.dateFrom&&r.date<=c.dateTo);
+        if(conge){
+          const ct=CONGE_TYPES[conge.type]||{lbl:conge.type,cls:'ct-ex'};
+          return '<span class="conge-type-badge '+ct.cls+'">🏖 '+ct.lbl+'</span>';
+        }
+        if(isFerie(r.date)) return '<span class="sb" style="background:#f0fdf4;color:#15803d">🗓 Jour férié</span>';
+        if(isWeekend(r.date)||r.status==='No Shift Schedule') return '<span class="sb sb-nosh">Jour de repos</span>';
+        return stBadge(r.status);
+      })()}</td>
+      <td style="font-weight:500">${r.checkin||'—'}</td>
+      <td>${r.checkout||'—'}</td>
+      <td style="color:${calcLateEffective(r.id,r.date,r.checkin)>0?'#b91c1c':'#94a3b8'}">${calcLateEffective(r.id,r.date,r.checkin)>0?calcLateEffective(r.id,r.date,r.checkin)+' min':'—'}</td>
+      <td style="color:${calcEarlyEffective(r.id,r.date,r.checkout)>0?'#b45309':'#94a3b8'}">${calcEarlyEffective(r.id,r.date,r.checkout)>0?calcEarlyEffective(r.id,r.date,r.checkout)+' min':'—'}</td>
+      <td>${calcWorkedMin(r.id,r.date,r.checkin,r.checkout)>0?calcWorkedMin(r.id,r.date,r.checkin,r.checkout)+' min':'—'}</td>
+      <td>${terr?'<span class="sb sb-terrain">Terrain ✓</span>':'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// CONGÉS
+// ══════════════════════════════════════════════════════════════
+const CONGE_TYPES = {
+  CP:  {lbl:'Congé payé',       cls:'ct-cp',  color:'#1d4ed8'},
+  CSS: {lbl:'Sans solde',       cls:'ct-css', color:'#065f46'},
+  AM:  {lbl:'Maladie',          cls:'ct-am',  color:'#b45309'},
+  SM:  {lbl:'Maternité/Pat.',   cls:'ct-sm',  color:'#9d174d'},
+  EX:  {lbl:'Autre justifié',   cls:'ct-ex',  color:'#7c3aed'},
+};
+
+function congeBadge(type){
+  const m=CONGE_TYPES[type]||{lbl:type,cls:'ct-ex',color:'#7c3aed'};
+  return `<span class="conge-type-badge ${m.cls}">${m.lbl}</span>`;
+}
+
+// Calculer les jours ouvrés entre deux dates (hors weekends et fériés)
+function joursOuvresConge(from, to){
+  if(!from||!to) return 0;
+  // Fériés fixes Sénégal (mois-jour) — indépendant de CFG pour fiabilité
+  const feriesMJ = new Set(['01-01','04-04','05-01','08-15','11-01','12-25']);
+  // Fériés mobiles connus (toutes années)
+  const feriesDates = new Set([
+    '2026-01-14','2026-03-20','2026-04-03','2026-04-05','2026-04-06',
+    '2026-05-14','2026-05-25','2026-06-11',
+    '2025-01-13','2025-03-31','2025-04-02','2025-04-18','2025-04-21',
+    '2025-05-29','2025-06-08','2025-06-06','2025-04-04',
+    '2027-01-01'
+  ]);
+  // Ajouter UNIQUEMENT les fériés personnalisés (pas activeHolidays)
+  try{ CFG.customHolidays.forEach(h=>{ if(h.date) feriesDates.add(h.date); }); }catch(e){}
+
+  function isNonOuvre(d){
+    const dt = new Date(d+'T12:00:00');
+    const dow = dt.getDay(); // 0=dim, 6=sam
+    if(dow===0||dow===6) return true;
+    if(feriesMJ.has(d.slice(5))) return true; // MM-DD fixe
+    if(feriesDates.has(d)) return true;
+    return false;
+  }
+
+  let count=0, cur=from;
+  while(cur<=to){
+    if(!isNonOuvre(cur)) count++;
+    const [y,m,d]=cur.split('-').map(Number);
+    const next=new Date(y,m-1,d+1);
+    cur=next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-'+String(next.getDate()).padStart(2,'0');
+  }
+  return count;
+}
+
+// Vérifier si une date est en congé pour un employé donné
+function isEnConge(id, date){
+  return DB.conges.some(c=>c.id===id&&date>=c.dateFrom&&date<=c.dateTo);
+}
+
+// Saisie congé
+function saveConge(){
+  const id   = document.getElementById('congeEmp').value;
+  const type = document.getElementById('congeType').value;
+  const from = document.getElementById('congeFrom').value;
+  const to   = document.getElementById('congeTo').value;
+  const note = document.getElementById('congeNote').value.trim();
+  if(!id){ alert('Sélectionnez un employé.'); return; }
+  if(!from||!to){ alert('Saisissez les dates de début et fin.'); return; }
+  if(from>to){ alert('La date de fin doit être après le début.'); return; }
+  const emp = DB.employes[id];
+  // Supprimer si overlap existant sur mêmes dates
+  const idx = DB.conges.findIndex(c=>c.id===id&&c.dateFrom===from&&c.dateTo===to);
+  // Ne pas stocker jours (recalculé dynamiquement à l'affichage selon les fériés actifs)
+  const entry = {id, name:emp?.name||id, dept:emp?.dept||'', type, dateFrom:from, dateTo:to, note};
+  if(idx>=0) DB.conges[idx]=entry; else DB.conges.push(entry);
+  // Vider le formulaire
+  document.getElementById('congeFrom').value='';
+  document.getElementById('congeTo').value='';
+  document.getElementById('congeNote').value='';
+  document.getElementById('congeCalcInfo').textContent='';
+  renderConges();
+  refreshAll();
+  const joursCalc=joursOuvresConge(from,to); alert(`Congé enregistré — ${joursCalc} jour(s) ouvré(s) ✓`);
+}
+
+// Calcul en temps réel
+function updateCongeCalc(){
+  const from=document.getElementById('congeFrom').value;
+  const to  =document.getElementById('congeTo').value;
+  const info=document.getElementById('congeCalcInfo');
+  if(!info) return;
+  if(from&&to&&from<=to){
+    const j=joursOuvresConge(from,to);
+    // Compter les fériés actifs dans cette plage
+    let feriesInRange=0;
+    let tcur=from;
+    while(tcur<=to){
+      if(isFerie(tcur)) feriesInRange++;
+      const [ty,tm,td]=tcur.split('-').map(Number);
+      const tn=new Date(ty,tm-1,td+1);
+      tcur=tn.getFullYear()+'-'+String(tn.getMonth()+1).padStart(2,'0')+'-'+String(tn.getDate()).padStart(2,'0');
+    }
+    info.textContent=`→ ${j} jour(s) ouvré(s) · ${feriesInRange} férié(s) exclu(s) · weekends exclus`;
+    info.style.color='var(--green)';
+  } else {
+    info.textContent='';
+  }
+}
+
+function deleteConge(i){
+  if(!confirm('Supprimer ce congé ?')) return;
+  DB.conges.splice(i,1);
+  renderConges();
+  refreshAll();
+}
+
+function renderConges(){
+  const q  = document.getElementById('congeQ')?.value.toLowerCase()||'';
+  const d  = document.getElementById('congeDept')?.value||'';
+  const t  = document.getElementById('congeTypeF')?.value||'';
+  // Alimenter le select dept
+  const depts=[...new Set(Object.values(DB.employes).filter(e=>e.validated!==false&&!e.excluded).map(e=>e.dept))].sort();
+  const dsel=document.getElementById('congeDept');
+  if(dsel){const cur=dsel.value;dsel.innerHTML='<option value="">Tous les depts</option>'+depts.map(dep=>`<option value="${dep}">${dep}</option>`).join('');dsel.value=cur;}
+
+  const filtered = DB.conges.filter(c=>
+    (!q||c.name.toLowerCase().includes(q)||c.id.includes(q))&&
+    (!d||c.dept===d)&&(!t||c.type===t)
+  ).sort((a,b)=>b.dateFrom.localeCompare(a.dateFrom));
+
+  const body=document.getElementById('congeBody');
+  if(!body) return;
+  if(!filtered.length){
+    body.innerHTML='<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--muted)">Aucun congé enregistré</td></tr>';
+    document.getElementById('congeCount').textContent='';
+    return;
+  }
+  body.innerHTML=filtered.map((c,i)=>{
+    const joursCalc=joursOuvresConge(c.dateFrom, c.dateTo);
+    return `<tr>
+    <td><div class="ename">${c.name}</div><div class="eid">${c.id}</div></td>
+    <td><span class="db db-${c.dept}">${c.dept}</span></td>
+    <td>${congeBadge(c.type)}</td>
+    <td style="font-family:monospace;font-size:11px">${c.dateFrom}</td>
+    <td style="font-family:monospace;font-size:11px">${c.dateTo}</td>
+    <td style="text-align:center;font-weight:600;color:var(--green)">${joursCalc} j</td>
+    <td style="font-size:11px;color:var(--muted)">${c.note||'—'}</td>
+    <td><button class="btn-sm btn-sm-no" onclick="deleteConge(${DB.conges.indexOf(c)})">✗</button></td>
+  </tr>`;}).join('');
+  const totalJours=filtered.reduce((s,c)=>s+joursOuvresConge(c.dateFrom,c.dateTo),0);
+  document.getElementById('congeCount').textContent=`${filtered.length} congé(s) · ${totalJours} jour(s) ouvré(s) au total`;
+}
+
+function populateCongeEmp(){
+  const sel=document.getElementById('congeEmp');
+  if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Sélectionner…</option>'+
+    Object.entries(DB.employes)
+      .filter(([,e])=>e.validated!==false&&!e.excluded)
+      .sort((a,b)=>a[1].name.localeCompare(b[1].name))
+      .map(([id,e])=>`<option value="${id}">${e.name} (${e.dept})</option>`).join('');
+  sel.value=cur;
+}
+
+// Ajouter les event listeners pour le calcul en temps réel
+document.addEventListener('DOMContentLoaded', ()=>{
+  const cf=document.getElementById('congeFrom');
+  const ct=document.getElementById('congeTo');
+  if(cf) cf.addEventListener('change', updateCongeCalc);
+  if(ct) ct.addEventListener('change', updateCongeCalc);
+});
+
+// ══════════════════════════════════════════════════════════════
+// TRI & FILTRE PAR EN-TÊTE DE COLONNE
+// ══════════════════════════════════════════════════════════════
+const COL_SORT = { emp:{col:'name',dir:1}, abs:{col:'date',dir:-1}, det:{col:'date',dir:-1} };
+const COL_FILTERS = { emp:{}, abs:{}, det:{} };
+
+function thSort(tbl, col){
+  const cs=COL_SORT[tbl];
+  if(cs.col===col) cs.dir*=-1; else{cs.col=col;cs.dir=1;}
+  updateSortHeaders(tbl);
+  if(tbl==='emp'){empPage=0;renderEmp();}
+  else if(tbl==='abs'){absPage=0;renderAbs();}
+  else if(tbl==='det'){detPage=0;renderDet();}
+}
+
+function updateSortHeaders(tbl){
+  const map={emp:'page-employes',abs:'page-absences',det:'page-detail'};
+  const page=document.getElementById(map[tbl]);
+  if(!page) return;
+  const cs=COL_SORT[tbl];
+  page.querySelectorAll('thead th.sortable').forEach(th=>{
+    th.classList.remove('asc','desc');
+    // Détecter la colonne via onclick
+    const fn=th.getAttribute('onclick')||'';
+    const m=fn.match(/'([^']+)'\)$/);
+    if(m&&m[1]===cs.col) th.classList.add(cs.dir===1?'asc':'desc');
+  });
+}
+
+function sortData(arr, col, dir){
+  return [...arr].sort((a,b)=>{
+    let va=a[col],vb=b[col];
+    if(va===undefined||va===null) va='';
+    if(vb===undefined||vb===null) vb='';
+    if(typeof va==='number'&&typeof vb==='number') return (va-vb)*dir;
+    return String(va).localeCompare(String(vb))*dir;
+  });
+}
+
+// ── FILTRE PAR COLONNE (dropdown avec cases à cocher) ─────────
+let openDropdown=null;
+
+function thFilter(event, tbl, col){
+  event.stopPropagation();
+  const ddId=`fd-${tbl}-${col}`;
+  const dd=document.getElementById(ddId);
+  if(!dd) return;
+
+  // Fermer tout autre dropdown ouvert
+  if(openDropdown&&openDropdown!==dd){
+    openDropdown.classList.remove('open');
+    openDropdown=null;
+  }
+
+  if(dd.classList.contains('open')){
+    dd.classList.remove('open');
+    openDropdown=null;
+    return;
+  }
+
+  // Construire les options
+  buildDropdown(dd, tbl, col);
+  dd.classList.add('open');
+  openDropdown=dd;
+}
+
+document.addEventListener('click',()=>{
+  if(openDropdown){openDropdown.classList.remove('open');openDropdown=null;}
+});
+
+function buildDropdown(dd, tbl, col){
+  // Collecter les valeurs uniques selon la table
+  let vals=[];
+  if(tbl==='emp'){
+    const rows=getRows();
+    if(!rows.length) return;
+    const s=computeStats(rows);
+    const q=document.getElementById('empQ').value.toLowerCase();
+    const data=s.empList.filter(e=>!q||e.name.toLowerCase().includes(q));
+    if(col==='dept') vals=[...new Set(data.map(e=>e.dept))].sort();
+    else if(col==='statut') vals=[...new Set(data.map(e=>e.statut))].sort();
+  } else if(tbl==='abs'){
+    const data=DB.rows.filter(r=>DB.employes[r.id]?.validated!==false&&r.status==='Absence');
+    if(col==='dept') vals=[...new Set(data.map(r=>DB.employes[r.id]?.dept||r.dept))].sort();
+    else if(col==='absType') vals=['abs-total','abs-depart','abs-arrivee'];
+  } else if(tbl==='det'){
+    const data=DB.rows.filter(r=>DB.employes[r.id]?.validated!==false);
+    if(col==='dept') vals=[...new Set(data.map(r=>DB.employes[r.id]?.dept||r.dept))].sort();
+    else if(col==='status') vals=[...new Set(data.map(r=>r.status))].filter(Boolean).sort();
+  }
+
+  const active=COL_FILTERS[tbl][col]||new Set();
+  const allSelected=active.size===0;
+
+  const LABELS={
+    'abs-total':'Abs. aucun pointage','abs-depart':'Abs. départ manquant','abs-arrivee':'Abs. arrivée manquante',
+    'Normal':'Normal','Late':'Retard','Early':'Anticipé','Late/Early':'Ret.+Dép.',
+    'Absence':'Absence','No Shift Schedule':'Jour de repos',
+    'critique':'Critique','attention':'Attention','ok':'OK',
+    'AOE':'AOE','GES':'GES','GA':'GA'
+  };
+
+  dd.innerHTML=`
+    <input type="text" placeholder="Rechercher…" oninput="filterDropdownOpts(this,'dd-opts-${tbl}-${col}')" onclick="event.stopPropagation()">
+    <div class="col-dropdown-opts" id="dd-opts-${tbl}-${col}">
+      <label class="col-opt" onclick="event.stopPropagation()">
+        <input type="checkbox" id="dd-all-${tbl}-${col}" ${allSelected?'checked':''} onchange="ddToggleAll(this,'${tbl}','${col}')">
+        <span>Tout sélectionner</span>
+      </label>
+      ${vals.map(v=>`
+        <label class="col-opt" onclick="event.stopPropagation()">
+          <input type="checkbox" class="dd-chk-${tbl}-${col}" value="${v}" ${allSelected||active.has(v)?'checked':''}
+            onchange="ddToggleVal(this,'${tbl}','${col}')">
+          <span>${LABELS[v]||v}</span>
+        </label>`).join('')}
+    </div>
+    <div class="col-dropdown-footer">
+      <button onclick="ddClear('${tbl}','${col}');event.stopPropagation()">Tout afficher</button>
+      <button class="apply" onclick="ddApply('${tbl}','${col}');event.stopPropagation()">Appliquer</button>
+    </div>`;
+}
+
+function filterDropdownOpts(input, listId){
+  const q=input.value.toLowerCase();
+  document.querySelectorAll(`#${listId} .col-opt:not(:first-child)`).forEach(opt=>{
+    opt.style.display=opt.textContent.toLowerCase().includes(q)?'':'none';
+  });
+}
+
+function ddToggleAll(chk,tbl,col){
+  const checked=chk.checked;
+  document.querySelectorAll(`.dd-chk-${tbl}-${col}`).forEach(c=>c.checked=checked);
+}
+
+function ddToggleVal(chk,tbl,col){
+  const all=document.getElementById(`dd-all-${tbl}-${col}`);
+  const chks=[...document.querySelectorAll(`.dd-chk-${tbl}-${col}`)];
+  if(all) all.checked=chks.every(c=>c.checked);
+}
+
+function ddApply(tbl,col){
+  const chks=[...document.querySelectorAll(`.dd-chk-${tbl}-${col}`)];
+  const checked=chks.filter(c=>c.checked).map(c=>c.value);
+  const allChecked=checked.length===chks.length;
+  COL_FILTERS[tbl][col]=allChecked?new Set():new Set(checked);
+
+  // Mettre à jour l'indicateur visuel sur le header
+  const ddId=`fd-${tbl}-${col}`;
+  const dd=document.getElementById(ddId);
+  if(dd){
+    const th=dd.closest('th');
+    if(th) th.classList.toggle('active',!allChecked);
+    dd.classList.remove('open');
+    openDropdown=null;
+  }
+  if(tbl==='emp'){empPage=0;renderEmp();}
+  else if(tbl==='abs'){absPage=0;renderAbs();}
+  else if(tbl==='det'){detPage=0;renderDet();}
+}
+
+function ddClear(tbl,col){
+  COL_FILTERS[tbl][col]=new Set();
+  const ddId=`fd-${tbl}-${col}`;
+  const dd=document.getElementById(ddId);
+  if(dd){const th=dd.closest('th');if(th) th.classList.remove('active');dd.classList.remove('open');openDropdown=null;}
+  if(tbl==='emp'){empPage=0;renderEmp();}
+  else if(tbl==='abs'){absPage=0;renderAbs();}
+  else if(tbl==='det'){detPage=0;renderDet();}
+}
+
+function applyColFilter(arr, tbl, fields){
+  // fields: [{key, colName}] — colName = clé dans COL_FILTERS[tbl]
+  return arr.filter(row=>{
+    return fields.every(({key,col})=>{
+      const f=COL_FILTERS[tbl][col];
+      if(!f||f.size===0) return true;
+      return f.has(String(row[key]));
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════════
+function destroyChart(k){if(charts[k]){charts[k].destroy();delete charts[k];}}
+</script>
+
+<!-- PLEINE PAGE EMPLOYÉS -->
+<div class="page-fullscreen" id="fs-emp">
+  <div class="fullscreen-bar">
+    <h2>👥 Employés — Vue complète</h2>
+    <span style="font-size:11px;color:var(--muted)" id="fsEmpInfo"></span>
+    <button class="btn-exit-fs" onclick="closeFullscreen()">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Quitter
+    </button>
+  </div>
+  <div class="tw" style="border-radius:12px;overflow:hidden">
+    <div class="tscroll"><table id="fsEmpTable">
+      <thead><tr>
+        <th>Employé</th><th>Dépt.</th><th>Présences</th>
+        <th style="background:#7b1f40">Abs. totales</th>
+        <th style="background:#881337">Aucun pointage</th>
+        <th style="background:#5b21b6">Dép. manquant</th>
+        <th style="background:#92400e">Arr. manquante</th>
+        <th>Retards</th><th>H.Retard</th><th>H.Travail</th><th>Taux prés.</th><th>Statut</th>
+      </tr></thead>
+      <tbody id="fsEmpBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- PLEINE PAGE ABSENCES -->
+<div class="page-fullscreen" id="fs-abs">
+  <div class="fullscreen-bar">
+    <h2>🚫 Absences — Vue complète</h2>
+    <span style="font-size:11px;color:var(--muted)" id="fsAbsInfo"></span>
+    <button class="btn-exit-fs" onclick="closeFullscreen()">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Quitter
+    </button>
+  </div>
+  <div class="tw" style="border-radius:12px;overflow:hidden">
+    <div class="tscroll"><table id="fsAbsTable">
+      <thead><tr>
+        <th>Employé</th><th>Dépt.</th><th>Date</th>
+        <th style="background:#7b1f40">Type absence</th>
+        <th style="background:#881337">Pointage arrivée</th>
+        <th style="background:#5b21b6">Pointage départ</th>
+        <th>Justification terrain</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="fsAbsBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- PLEINE PAGE DÉTAIL -->
+<div class="page-fullscreen" id="fs-det">
+  <div class="fullscreen-bar">
+    <h2>📋 Détail pointages — Vue complète</h2>
+    <span style="font-size:11px;color:var(--muted)" id="fsDetInfo"></span>
+    <button class="btn-exit-fs" onclick="closeFullscreen()">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Quitter
+    </button>
+  </div>
+  <div class="tw" style="border-radius:12px;overflow:hidden">
+    <div class="tscroll"><table id="fsDetTable">
+      <thead><tr>
+        <th>Employé</th><th>Dépt.</th><th>Date</th><th>Statut</th>
+        <th>Check-In</th><th>Check-Out</th><th>Retard</th>
+        <th>Dép. anticipé</th><th>Travaillé</th><th>Terrain</th>
+      </tr></thead>
+      <tbody id="fsDetBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+</body>
+</html>
