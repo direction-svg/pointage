@@ -461,8 +461,13 @@ body.has-fullscreen .tabs { display:none }
     </div>
     <label class="btn-imp" id="btnImport" style="display:none">
       <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 3v9M7 9l3 3 3-3M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
-      Importer
+      Excel
       <input type="file" id="fileIn" accept=".xlsx,.xls" multiple style="display:none" onchange="handleFiles(event)">
+    </label>
+    <label class="btn-imp" id="btnImportPdf" style="display:none;background:#7c3aed">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 4h8l4 4v8a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" stroke="white" stroke-width="1.5"/><path d="M12 4v4h4" stroke="white" stroke-width="1.5"/></svg>
+      PDF journalier
+      <input type="file" id="pdfIn" accept=".pdf" style="display:none" onchange="handlePdfImport(event)">
     </label>
     <div id="userBadge" style="display:none;align-items:center;gap:8px">
       <div style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);border-radius:9px;padding:5px 12px">
@@ -3868,6 +3873,8 @@ function updateAuthUI(){
   // Bouton import
   const bi = document.getElementById('btnImport');
   if(bi) bi.style.display = canDo('import')?'flex':'none';
+  const bip = document.getElementById('btnImportPdf');
+  if(bip) bip.style.display = canDo('import')?'flex':'none';
   // Onglet comptes
   const tu = document.getElementById('tabUsers');
   if(tu) tu.style.display = (currentUser.role==='superadmin')?'block':'none';
@@ -4058,6 +4065,166 @@ async function migrateToSupabase(){
     console.error('[Migration]',e);
     showNotif('❌ Erreur migration : '+e.message.slice(0,80));
   }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// IMPORT PDF JOURNALIER iVMS
+// ══════════════════════════════════════════════════════════════
+
+async function handlePdfImport(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  event.target.value = '';
+
+  showLoadingBanner('Lecture du PDF : '+file.name+'...');
+  try{
+    // Lire le PDF avec PDF.js
+    const arrayBuffer = await file.arrayBuffer();
+    const rows = await parsePdfIvms(arrayBuffer, file.name);
+
+    if(!rows.length){
+      hideLoadingBanner();
+      alert('Aucune donnée trouvée dans ce PDF.');
+      return;
+    }
+
+    showLoadingBanner('Import de '+rows.length+' lignes...');
+
+    // Merger dans DB.rows (LAST-WINS sur id+date)
+    let newCount = 0;
+    rows.forEach(r=>{
+      const idx = DB.rows.findIndex(x=>x.id===r.id&&x.date===r.date);
+      if(idx>=0){ DB.rows[idx]={...DB.rows[idx],...r}; }
+      else{ DB.rows.push(r); newCount++; }
+    });
+
+    // Enregistrer le fichier dans l'historique
+    const fichier = {name:file.name, size:file.size, rows:rows.length, date:new Date().toLocaleDateString('fr-FR')};
+    DB.fichiers.push(fichier);
+
+    // Sauvegarder
+    saveToStorage();
+
+    // Synchroniser Supabase
+    showLoadingBanner('Synchronisation Supabase...');
+    try{
+      await savePointagesToSB(rows);
+      await saveFichierToSB(fichier);
+      hideLoadingBanner();
+      showSaveConfirm('PDF importé — '+rows.length+' lignes synchronisées ✓');
+    }catch(e){
+      hideLoadingBanner();
+      showNotif('⚠️ Import local OK, Supabase: '+e.message.slice(0,50));
+    }
+
+    refreshAll();
+    document.getElementById('importEmpty').style.display='none';
+
+  }catch(e){
+    hideLoadingBanner();
+    console.error('[PDF Import]', e);
+    alert('Erreur lors de la lecture du PDF : '+e.message);
+  }
+}
+
+async function parsePdfIvms(arrayBuffer, filename){
+  // Charger PDF.js depuis CDN
+  if(!window.pdfjsLib){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+  const rows = [];
+
+  // Colonnes fixes dans le PDF iVMS journalier
+  // No | ID | Name | Dept | Pos | Gender | Date | Week | Timetable
+  // CheckIn | CheckOut | Work | OT | Attended | Late | Early | Absent | Leave | Status | Records
+  const COL = {id:1,name:2,dept:3,date:6,checkin:9,checkout:10,work:11,late:14,early:15,status:18};
+
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+
+    // Grouper les items texte par position Y (ligne)
+    const byY = {};
+    content.items.forEach(item=>{
+      const y = Math.round(item.transform[5] / 3) * 3;
+      if(!byY[y]) byY[y] = [];
+      byY[y].push({x: item.transform[4], text: item.str});
+    });
+
+    // Trier par Y décroissant (haut → bas), puis X croissant
+    const sortedYs = Object.keys(byY).map(Number).sort((a,b)=>b-a);
+
+    // Pour chaque ligne, reconstituer le texte par position X
+    for(const y of sortedYs){
+      const items = byY[y].sort((a,b)=>a.x-b.x);
+      const lineText = items.map(i=>i.text).join(' ').trim();
+
+      // Détecter les lignes de données : commence par un numéro
+      const noMatch = lineText.match(/^(\d{1,3})\s/);
+      if(!noMatch) continue;
+
+      // Extraire les données par regex depuis la ligne complète
+      // Date format : DD/MM/YYYY
+      const dateMatch = lineText.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if(!dateMatch) continue;
+      const date = dateMatch[3]+'-'+dateMatch[2]+'-'+dateMatch[1];
+
+      // Times HH:MM:SS
+      const times = lineText.match(/\d{2}:\d{2}:\d{2}/g) || [];
+      const checkin  = times[0] || '';
+      const checkout = times[1] || '';
+
+      // Status (A, W, L-W, L, E, E-W)
+      const statusMatch = lineText.match(/\s(A|L-W|L|E-W|E|W)\s/);
+      const rawStatus = statusMatch ? statusMatch[1] : 'A';
+      let status = 'Absence';
+      if(rawStatus==='W')               status='Normal';
+      else if(rawStatus==='L-W'||rawStatus==='L') status='Late';
+      else if(rawStatus==='E-W'||rawStatus==='E') status='Early';
+
+      // ID : extraire les chiffres consécutifs après le numéro de ligne
+      const idMatch = lineText.match(/^\d+\s+([\d\s]+?)\s+[A-Z]/);
+      if(!idMatch) continue;
+      const empId = idMatch[1].replace(/\s/g,'').padStart(8,'0');
+      if(!empId || empId==='00000000') continue;
+
+      // Chiffres numériques (worked, late, early)
+      const nums = lineText.match(/\d+/g) || [];
+      const worked   = parseInt(nums[nums.length-9]||0) || 0;
+      const lateMin  = parseInt(nums[nums.length-7]||0) || 0;
+      const earlyMin = parseInt(nums[nums.length-6]||0) || 0;
+
+      // Département
+      const deptMatch = lineText.match(/GLOBOCORPS\/(\w+)/i);
+      const dept = deptMatch ? deptMatch[1].replace(/\s/g,'') : '';
+
+      rows.push({
+        id: empId, date, dept,
+        name: '', // on n'écrase pas le nom existant en base
+        checkin, checkout, status,
+        late: lateMin, early: earlyMin, worked,
+      });
+    }
+  }
+
+  // Dédupliquer (garder dernière occurrence par id+date)
+  const seen = new Map();
+  rows.forEach(r=>{ if(r.id&&r.date) seen.set(r.id+'|'+r.date, r); });
+  return [...seen.values()];
+}
+
+function loadScript(src){
+  return new Promise((resolve,reject)=>{
+    if(document.querySelector('script[src="'+src+'"]')){ resolve(); return; }
+    const s=document.createElement('script');
+    s.src=src; s.onload=resolve; s.onerror=reject;
+    document.head.appendChild(s);
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
