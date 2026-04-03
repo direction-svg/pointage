@@ -1168,6 +1168,9 @@ function checkStorageVersion(){
 }
 
 function saveToStorage(){
+  // Sauvegarder config dans Supabase (async, en arrière-plan)
+  saveConfigToSB().catch(e=>console.warn('[SB config]',e.message));
+  saveEmployesToSB().catch(e=>console.warn('[SB employes]',e.message));
   try{
     const data = {
       rows:     DB.rows,
@@ -1261,6 +1264,203 @@ function storageInfo(){
 
 
 const SHIFT_MIN = 480; // 8h = durée standard Lun-Jeu et Vendredi (hors pause)
+
+
+// ══════════════════════════════════════════════════════════════
+// SUPABASE — Base de données partagée entre tous les utilisateurs
+// ══════════════════════════════════════════════════════════════
+const SB_URL = 'https://weggyisrymvaqexdyolu.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlZ2d5aXNyeW12YXFleGR5b2x1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMTIzODMsImV4cCI6MjA5MDc4ODM4M30.4PrN_KmRiUHGD0DEQt1JXUXIgLSIGO_ws2t7oVmR6Lc';
+
+// Helper générique : appel REST Supabase
+async function sbReq(method, table, body=null, params=''){
+  const url = `${SB_URL}/rest/v1/${table}${params}`;
+  const opts = {
+    method,
+    headers: {
+      'apikey':        SB_KEY,
+      'Authorization': 'Bearer '+SB_KEY,
+      'Content-Type':  'application/json',
+      'Prefer':        method==='POST'?'resolution=merge-duplicates,return=minimal':'return=minimal'
+    }
+  };
+  if(body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  if(!r.ok){
+    const err = await r.text();
+    throw new Error(`Supabase ${method} ${table}: ${r.status} ${err.slice(0,100)}`);
+  }
+  return method==='GET'||method==='DELETE'? r.json() : true;
+}
+
+// ── Chargement initial depuis Supabase ────────────────────────
+async function loadFromSupabase(){
+  showLoadingBanner('Chargement des données...');
+  try{
+    const [pointages, employes, congesData, terrainData, fichiersData, configData, usersData] = await Promise.all([
+      sbReq('GET','pointages','','?select=*&order=date.asc&limit=50000'),
+      sbReq('GET','employes','','?select=*'),
+      sbReq('GET','conges','','?select=*'),
+      sbReq('GET','terrain','','?select=*'),
+      sbReq('GET','fichiers','','?select=*&order=imported_at.asc'),
+      sbReq('GET','config','','?select=*'),
+      sbReq('GET','users','','?select=*'),
+    ]);
+
+    // Pointages → DB.rows
+    DB.rows = (pointages||[]).map(p=>({
+      id:p.id, date:p.date, name:p.name, dept:p.dept,
+      status:p.status, checkin:p.checkin||'', checkout:p.checkout||'',
+      late:p.late||0, early:p.early||0, worked:p.worked||0
+    }));
+
+    // Employés
+    DB.employes = {};
+    (employes||[]).forEach(e=>{
+      DB.employes[e.id]={name:e.name,dept:e.dept,validated:e.validated!==false,excluded:!!e.excluded,isNew:!!e.is_new};
+    });
+
+    // Congés
+    DB.conges = (congesData||[]).map(c=>({
+      id:c.id, id_emp:c.emp_id, name:c.name, dept:c.dept,
+      type:c.type, dateFrom:c.date_from, dateTo:c.date_to,
+      note:c.note||'', jours:c.jours||0
+    }));
+
+    // Terrain
+    DB.terrain = (terrainData||[]).map(t=>({
+      id:t.emp_id, name:t.name, dept:t.dept, date:t.date,
+      start:t.start_time, end:t.end_time, conf:t.conf, note:t.note
+    }));
+
+    // Fichiers
+    DB.fichiers = (fichiersData||[]).map(f=>({name:f.name,size:f.size,rows:f.rows,date:f.date}));
+
+    // Config
+    (configData||[]).forEach(c=>{
+      try{
+        const val = c.value;
+        if(c.key==='globalTolerance') CFG.globalTolerance = val||0;
+        else if(c.key==='tolerances')  CFG.tolerances = val||{};
+        else if(c.key==='schedules')   CFG.schedules = val||{};
+        else if(c.key==='customHolidays') {
+          CFG.customHolidays = val||[];
+          CFG.customHolidays.forEach(h=>{ if(h.date) CFG.activeHolidays.add(h.date); });
+        }
+        else if(c.key==='periodesHoraires') CFG.periodesHoraires = val||[];
+      }catch(e){}
+    });
+
+    // Users → remplace getUsers()
+    if(usersData && usersData.length) saveUsersLocal(usersData);
+
+    hideLoadingBanner();
+    console.log('[Supabase] Chargé:', DB.rows.length, 'pointages,', DB.conges.length, 'congés');
+    return true;
+  }catch(e){
+    hideLoadingBanner();
+    console.error('[Supabase] Erreur chargement:', e.message);
+    showNotif('⚠️ Erreur connexion Supabase : '+e.message.slice(0,60));
+    return false;
+  }
+}
+
+// ── Sauvegarde Supabase ───────────────────────────────────────
+
+// Pointages : upsert par batch de 500
+async function savePointagesToSB(rows){
+  if(!rows||!rows.length) return;
+  const batch = 500;
+  for(let i=0;i<rows.length;i+=batch){
+    const chunk = rows.slice(i,i+batch).map(r=>({
+      id:r.id, date:r.date, name:r.name, dept:r.dept,
+      status:r.status, checkin:r.checkin||'', checkout:r.checkout||'',
+      late:r.late||0, early:r.early||0, worked:r.worked||0
+    }));
+    await sbReq('POST','pointages',chunk);
+  }
+}
+
+// Employés
+async function saveEmployesToSB(){
+  const rows = Object.entries(DB.employes).map(([id,e])=>({
+    id, name:e.name, dept:e.dept,
+    validated:e.validated!==false, excluded:!!e.excluded, is_new:!!e.isNew
+  }));
+  if(!rows.length) return;
+  await sbReq('POST','employes',rows);
+}
+
+// Config (un enregistrement par clé)
+async function saveConfigToSB(){
+  const configs = [
+    {key:'globalTolerance',  value:CFG.globalTolerance},
+    {key:'tolerances',       value:CFG.tolerances},
+    {key:'schedules',        value:CFG.schedules},
+    {key:'customHolidays',   value:CFG.customHolidays},
+    {key:'periodesHoraires', value:CFG.periodesHoraires},
+  ];
+  await sbReq('POST','config',configs);
+}
+
+// Congé unique
+async function saveCongeToSB(c){
+  await sbReq('POST','conges',[{
+    id:c.id, emp_id:c.id||c.id_emp, name:c.name, dept:c.dept,
+    type:c.type, date_from:c.dateFrom, date_to:c.dateTo,
+    note:c.note||'', jours:c.jours||0
+  }]);
+}
+
+async function deleteCongeFromSB(id){
+  await sbReq('DELETE','conges','',`?id=eq.${id}`);
+}
+
+// Terrain
+async function saveTerrainToSB(t){
+  await sbReq('POST','terrain',[{
+    id: t.id+'|'+t.date,
+    emp_id:t.id, name:t.name, dept:t.dept, date:t.date,
+    start_time:t.start, end_time:t.end, conf:t.conf, note:t.note||''
+  }]);
+}
+
+// Fichier importé
+async function saveFichierToSB(f){
+  await sbReq('POST','fichiers',[{name:f.name,size:f.size,rows:f.rows,date:f.date}]);
+}
+
+// Users
+async function saveUserToSB(u){
+  await sbReq('POST','users',[u]);
+}
+async function updateUserInSB(u){
+  await sbReq('POST','users',[u]);
+}
+async function deleteUserFromSB(id){
+  await sbReq('DELETE','users','',`?id=eq.${id}`);
+}
+
+function saveUsersLocal(users){
+  try{localStorage.setItem(USERS_KEY, JSON.stringify(users));}catch(e){}
+}
+
+// ── Bannière de chargement ─────────────────────────────────────
+function showLoadingBanner(msg){
+  let b=document.getElementById('loadingBanner');
+  if(!b){
+    b=document.createElement('div');
+    b.id='loadingBanner';
+    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9998;background:#1d4ed8;color:#fff;text-align:center;padding:8px;font-size:12px;font-family:"DM Sans",sans-serif;';
+    document.body.appendChild(b);
+  }
+  b.textContent='⏳ '+msg;
+  b.style.display='block';
+}
+function hideLoadingBanner(){
+  const b=document.getElementById('loadingBanner');
+  if(b) b.style.display='none';
+}
 
 // ── GESTION UTILISATEURS ──────────────────────────────────────
 const USERS_KEY = 'hk_users';
@@ -1418,7 +1618,7 @@ function readFile(file){
     alert(`"${file.name}" est déjà chargé.`); return;
   }
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try{
       const wb = XLSX.read(e.target.result,{type:'array'});
       const ws = wb.Sheets[wb.SheetNames[0]];
@@ -1426,10 +1626,24 @@ function readFile(file){
       const rows = parseHikvision(raw);
       if(!rows.length){alert(`Aucune donnée valide dans "${file.name}"`);return;}
       const newEmps = mergeRows(rows);
-      DB.fichiers.push({name:file.name,size:file.size,rows:rows.length,date:new Date().toLocaleDateString('fr-FR')});
+      const fichier = {name:file.name,size:file.size,rows:rows.length,date:new Date().toLocaleDateString('fr-FR')};
+      DB.fichiers.push(fichier);
       if(newEmps.length) showNewEmpValidation(newEmps);
       refreshAll();
       document.getElementById('importEmpty').style.display='none';
+      // Sauvegarder dans Supabase
+      showLoadingBanner('Synchronisation Supabase...');
+      try{
+        await savePointagesToSB(rows);
+        await saveEmployesToSB();
+        await saveFichierToSB(fichier);
+        hideLoadingBanner();
+        showSaveConfirm('Import synchronisé ✓ — '+rows.length+' lignes');
+      }catch(e){
+        hideLoadingBanner();
+        console.error('[Supabase] Import:', e.message);
+        showNotif('⚠️ Import local OK, synchro Supabase échouée : '+e.message.slice(0,50));
+      }
     }catch(err){ alert(`Erreur lecture "${file.name}": ${err.message}`); }
   };
   reader.readAsArrayBuffer(file);
@@ -3261,8 +3475,10 @@ function updateCongeCalc(){
 
 function deleteConge(i){
   if(!confirm('Supprimer ce congé ?')) return;
+  const cid = DB.conges[i]?.id;
   DB.conges.splice(i,1);
   saveToStorage();
+  if(cid) deleteCongeFromSB(cid).catch(e=>console.warn('[SB delConge]',e.message));
   renderConges();
   refreshAll();
   showSaveConfirm('Congé supprimé ✓');
@@ -3329,27 +3545,25 @@ document.addEventListener('DOMContentLoaded', ()=>{
 // ══════════════════════════════════════════════════════════════
 // DÉMARRAGE — restaurer les données au chargement
 // ══════════════════════════════════════════════════════════════
-window.addEventListener('load', function(){
-  // 1. Initialiser les utilisateurs par défaut si besoin
+window.addEventListener('load', async function(){
+  // 1. Init users locaux si besoin (fallback)
   initDefaultUsers();
 
   // 2. Vérifier la session
   if(restoreSession()){
     hideLoginScreen();
-    try{
-      checkStorageVersion();
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(raw){
-        const data = JSON.parse(raw);
-        if(data && data.rows && data.rows.length){
-          loadFromStorage();
-          refreshAll();
-          const empty = document.getElementById('importEmpty');
-          if(empty) empty.style.display='none';
-          showNotif('✅ '+DB.rows.length+' pointages restaurés · '+DB.conges.length+' congé(s)');
-        }
-      }
-    }catch(e){ console.error('[Storage]',e); }
+    // 3. Charger les données depuis Supabase
+    const ok = await loadFromSupabase();
+    if(ok && DB.rows.length){
+      const empty = document.getElementById('importEmpty');
+      if(empty) empty.style.display='none';
+      refreshAll();
+      showNotif('✅ '+DB.rows.length+' pointages · '+DB.conges.length+' congé(s)');
+    } else if(!ok){
+      // Fallback localStorage si Supabase indisponible
+      loadFromStorage();
+      if(DB.rows.length) refreshAll();
+    }
   } else {
     showLoginScreen();
   }
@@ -3642,6 +3856,7 @@ function createUser(){
     createdAt: new Date().toISOString()
   });
   saveUsers(users);
+  saveUserToSB(users[users.length-1]).catch(e=>console.warn('[SB user]',e.message));
   document.getElementById('newUserName').value='';
   document.getElementById('newUserEmail').value='';
   document.getElementById('newUserPass').value='';
@@ -3653,6 +3868,7 @@ function deleteUser(id){
   if(!confirm('Supprimer définitivement ce compte ?')) return;
   const users = getUsers().filter(u=>u.id!==id);
   saveUsers(users);
+  deleteUserFromSB(id).catch(e=>console.warn('[SB delUser]',e.message));
   renderUsersList();
   showSaveConfirm('Compte supprimé ✓');
 }
@@ -3662,6 +3878,7 @@ function toggleUserActive(id){
   const u = users.find(u=>u.id===id);
   if(u) u.active = u.active===false ? true : false;
   saveUsers(users);
+  if(u) updateUserInSB(u).catch(e=>console.warn('[SB updateUser]',e.message));
   renderUsersList();
   showSaveConfirm((u?.active?'Compte activé':'Compte désactivé')+' ✓');
 }
