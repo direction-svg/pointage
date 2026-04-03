@@ -235,6 +235,21 @@ thead th.filterable.active{color:#93c5fd}
 .col-dropdown-footer button:hover{background:var(--bg)}
 
 
+
+/* PÉRIODES SPÉCIALES */
+.periode-card{background:var(--white);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;margin-bottom:8px}
+.periode-card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.periode-card-title{font-size:13px;font-weight:600;color:var(--navy);flex:1}
+.periode-dates{font-size:11px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:20px}
+.periode-horaire{display:flex;gap:12px;font-size:12px;flex-wrap:wrap}
+.ph-item{display:flex;align-items:center;gap:4px;color:var(--muted)}
+.ph-item strong{color:var(--text)}
+.ph-scope{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--blue-lt);color:var(--blue);font-weight:500}
+.btn-del-periode{background:none;border:1px solid #fca5a5;color:var(--red);border-radius:6px;
+  padding:3px 8px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.btn-del-periode:hover{background:var(--red-lt)}
+
 /* ADMIN */
 .admin-section{background:var(--white);border-radius:14px;border:1px solid var(--border);overflow:hidden;margin-bottom:1.2rem}
 .admin-section-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg)}
@@ -803,6 +818,7 @@ body.has-fullscreen .tabs { display:none }
       <div class="admin-tab" onclick="switchAdminTab('horaires',this)">🕐 Horaires aménagés</div>
       <div class="admin-tab" onclick="switchAdminTab('retard',this)">⏱ Tolérance retard</div>
       <div class="admin-tab" onclick="switchAdminTab('feries',this)">📅 Jours fériés</div>
+      <div class="admin-tab" onclick="switchAdminTab('periodes',this)">📆 Périodes spéciales</div>
     </div>
 
     <!-- ── PANEL MONITORING ── -->
@@ -886,6 +902,63 @@ body.has-fullscreen .tabs { display:none }
       </div>
     </div>
 
+    <!-- ── PANEL PÉRIODES SPÉCIALES ── -->
+    <div class="admin-panel" id="apanel-periodes">
+      <div class="banner-info">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#1d4ed8" stroke-width="1.5"/><path d="M10 9v4M10 7h.01" stroke="#1d4ed8" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Définissez des horaires aménagés sur une période précise (ex: Ramadan, été…). Ces horaires ont priorité sur les horaires individuels et les horaires standard. Ils s'appliquent à tous les employés ou à une sélection.
+      </div>
+
+      <!-- Formulaire ajout période -->
+      <div style="background:var(--blue-lt);border:1px solid #93c5fd;border-radius:12px;padding:16px;margin-bottom:1rem">
+        <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--blue);margin-bottom:10px">+ Nouvelle période horaire</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="form-group">
+            <label>Nom de la période</label>
+            <input type="text" id="periodeLabel" placeholder="Ex: Ramadan 2026">
+          </div>
+          <div class="form-group">
+            <label>Employés concernés</label>
+            <select class="fsel" id="periodeEmployes" style="width:100%">
+              <option value="all">Tous les employés</option>
+              <option value="dept">Par département</option>
+              <option value="select">Sélection manuelle</option>
+            </select>
+          </div>
+        </div>
+        <div id="periodeDeptRow" style="display:none;margin-bottom:10px">
+          <div class="form-group">
+            <label>Département</label>
+            <select class="fsel" id="periodeDept" style="width:100%">
+              <option value="AOE">AOE</option>
+              <option value="GES">GES</option>
+              <option value="GA">GA</option>
+            </select>
+          </div>
+        </div>
+        <div id="periodeSelectRow" style="display:none;margin-bottom:10px">
+          <div class="form-group">
+            <label>Employés (cochez)</label>
+            <div id="periodeEmpList" style="max-height:150px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px;background:var(--white);display:grid;grid-template-columns:1fr 1fr;gap:4px"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px">
+          <div class="form-group"><label>Début période</label><input type="date" id="periodeDateFrom"></div>
+          <div class="form-group"><label>Fin période</label><input type="date" id="periodeDateTo"></div>
+          <div class="form-group"><label>Heure début</label><input type="time" id="periodeStart" value="08:00"></div>
+          <div class="form-group"><label>Heure fin</label><input type="time" id="periodeEnd" value="16:30"></div>
+          <div class="form-group"><label>Pause (min)</label><input type="number" id="periodeBreak" value="30" min="0" max="180" style="width:100%"></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+          <span id="periodeDureeInfo" style="font-size:11px;color:var(--blue)"></span>
+          <button class="btn btn-primary" onclick="savePeriodeHoraire()">✓ Enregistrer la période</button>
+        </div>
+      </div>
+
+      <!-- Liste des périodes -->
+      <div id="periodesList"></div>
+    </div>
+
     <!-- ── PANEL JOURS FÉRIÉS ── -->
     <div class="admin-panel" id="apanel-feries">
       <div class="banner-info">
@@ -947,21 +1020,14 @@ const DB = {
 // ══════════════════════════════════════════════════════════════
 // PERSISTANCE LOCALSTORAGE
 // ══════════════════════════════════════════════════════════════
-const STORAGE_KEY    = 'hikvision_db_v42_clean';
-const STORAGE_VERSION = '4.2'; // Incrémenter pour forcer la réinitialisation
+const STORAGE_KEY = 'hk_pointage';
+const STORAGE_VERSION = '1';
 
 function checkStorageVersion(){
-  // Purger TOUTES les anciennes clés hikvision_ pour éviter pollution
-  const oldKeys = ['hikvision_dashboard_v4','hikvision_dashboard_v4_version',
-                   'hikvision_db_v4','hikvision_db_v41'];
-  oldKeys.forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} });
-
+  // Simplement s'assurer que la clé de version est enregistrée
   const savedVersion = localStorage.getItem(STORAGE_KEY+'_version');
-  if(savedVersion !== STORAGE_VERSION){
-    localStorage.removeItem(STORAGE_KEY);
+  if(!savedVersion){
     localStorage.setItem(STORAGE_KEY+'_version', STORAGE_VERSION);
-    console.log('🔄 Stockage réinitialisé (v'+STORAGE_VERSION+')');
-    return false;
   }
   return true;
 }
@@ -975,16 +1041,41 @@ function saveToStorage(){
       terrain:  DB.terrain,
       conges:   DB.conges,
       cfg: {
-        globalTolerance: CFG.globalTolerance,
-        tolerances:      CFG.tolerances,
-        schedules:       CFG.schedules,
-        // ⚠️ Sauver SEULEMENT les fériés personnalisés, pas tous les fériés fixes
-        // (les fériés fixes sont recalculés à chaque chargement par initDefaultHolidays)
-        customHolidays:  CFG.customHolidays,
+        globalTolerance:  CFG.globalTolerance,
+        tolerances:       CFG.tolerances,
+        schedules:        CFG.schedules,
+        customHolidays:   CFG.customHolidays,
+        periodesHoraires: CFG.periodesHoraires,
       }
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }catch(e){ console.warn('Sauvegarde localStorage échouée:', e.message); }
+}
+
+
+// Confirmation visuelle de sauvegarde
+function showSaveConfirm(msg){
+  // Chercher un toast existant ou en créer un
+  let t = document.getElementById('saveConfirmToast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'saveConfirmToast';
+    t.style.cssText = [
+      'position:fixed','bottom:20px','right:20px',
+      'background:#0f1f3d','color:#fff',
+      'padding:10px 18px','border-radius:10px',
+      'font-size:12px','font-family:"DM Sans",sans-serif',
+      'font-weight:500','z-index:9999',
+      'box-shadow:0 4px 16px rgba(0,0,0,.25)',
+      'display:flex','align-items:center','gap:8px',
+      'transition:opacity .4s','opacity:0'
+    ].join(';');
+    document.body.appendChild(t);
+  }
+  t.innerHTML = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10l4 4 8-8" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' + msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(()=>{ t.style.opacity='0'; }, 2500);
 }
 
 function loadFromStorage(){
@@ -999,10 +1090,11 @@ function loadFromStorage(){
     DB.terrain    = data.terrain    || [];
     DB.conges     = data.conges     || [];
     if(data.cfg){
-      CFG.globalTolerance = data.cfg.globalTolerance || 0;
-      CFG.tolerances      = data.cfg.tolerances      || {};
-      CFG.schedules       = data.cfg.schedules       || {};
-      CFG.customHolidays  = data.cfg.customHolidays  || [];
+      CFG.globalTolerance  = data.cfg.globalTolerance  || 0;
+      CFG.tolerances       = data.cfg.tolerances       || {};
+      CFG.schedules        = data.cfg.schedules        || {};
+      CFG.customHolidays   = data.cfg.customHolidays   || [];
+      CFG.periodesHoraires = data.cfg.periodesHoraires || [];
       // ⚠️ NE PAS restaurer activeHolidays depuis le localStorage
       // Les fériés fixes sont toujours recalculés par initDefaultHolidays()
       // On ajoute seulement les fériés personnalisés sauvegardés
@@ -1345,7 +1437,7 @@ function refreshAll(){
   populateTerrainEmp();
   if(document.getElementById('page-overview').classList.contains('active')) buildOverview();
   if(document.getElementById('page-alertes').classList.contains('active')) buildAlertes();
-  if(document.getElementById('page-admin').classList.contains('active')){ renderAdmin(); renderTolerances(); renderSchedules(); renderHolidays(); }
+  if(document.getElementById('page-admin').classList.contains('active')){ renderAdmin(); renderTolerances(); renderSchedules(); renderHolidays(); renderPeriodes(); }
 }
 
 function updateHeader(){
@@ -2177,16 +2269,17 @@ function adminToggleOne(id){
 Ses données ne seront plus comptabilisées dans les tableaux et statistiques.`)) return;
   }
   DB.employes[id].excluded = !wasExcluded;
+  saveToStorage();
   renderAdmin();
-  refreshAll();
+  showSaveConfirm((DB.employes[id].excluded?'Employé exclu':'Employé réintégré')+' ✓');
 }
 
 function adminChangeDept(id, dept){
   if(!DB.employes[id]) return;
   DB.employes[id].dept = dept;
-  // Mettre à jour aussi les lignes de pointage
   DB.rows.forEach(r=>{ if(r.id===id) r.dept=dept; });
-  refreshAll();
+  saveToStorage();
+  showSaveConfirm('Département mis à jour ✓');
 }
 
 function adminToggleAll(checked){
@@ -2213,6 +2306,8 @@ function adminBulkAction(include){
   const action = include ? 'réintégrer' : 'exclure';
   if(!confirm(`${action.charAt(0).toUpperCase()+action.slice(1)} ${ids.length} employé(s) ${include?'dans':'du'} monitoring ?`)) return;
   ids.forEach(id=>{ if(DB.employes[id]) DB.employes[id].excluded = !include; });
+  saveToStorage();
+  showSaveConfirm((include?'Employés réintégrés':'Employés exclus')+' ✓');
   // Décocher tout
   document.querySelectorAll('.admin-chk').forEach(c=>c.checked=false);
   const all = document.getElementById('adminChkAll');
@@ -2232,6 +2327,7 @@ const CFG = {
   tolerances: {},                // id → minutes (override globale)
   activeHolidays: new Set(),     // Set de dates 'YYYY-MM-DD' fériées actives
   customHolidays: [],            // [{date,name}] ajouts manuels
+  periodesHoraires: [],          // [{id,label,dateFrom,dateTo,employes,start,end,breakMin}]
 };
 
 // Horaires officiels selon le jour de la semaine
@@ -2251,16 +2347,30 @@ function getDefaultSched(dateStr){
 }
 
 // Durée standard en minutes pour un employé (tient compte du jour et des horaires aménagés)
+function getPeriodeHoraire(id, dateStr){
+  // Chercher une période horaire active pour cet employé et cette date
+  if(!dateStr||!CFG.periodesHoraires) return null;
+  return CFG.periodesHoraires.find(p=>
+    dateStr>=p.dateFrom && dateStr<=p.dateTo &&
+    (p.employes[0]==='all' || p.employes.includes(id))
+  )||null;
+}
+
 function getShiftMin(id, dateStr){
+  const periode = getPeriodeHoraire(id, dateStr);
+  if(periode){
+    const [sh,sm]=periode.start.split(':').map(Number);
+    const [eh,em]=periode.end.split(':').map(Number);
+    return (eh*60+em)-(sh*60+sm)-(periode.breakMin||0);
+  }
   if(CFG.schedules[id]){
-    // Horaire personnalisé
     const s = CFG.schedules[id];
     const [sh,sm] = s.start.split(':').map(Number);
     const [eh,em] = s.end.split(':').map(Number);
     return (eh*60+em) - (sh*60+sm) - (s.breakMin||0);
   }
   const def = getDefaultSched(dateStr);
-  return def.totalMin; // 480 min = 8h
+  return def.totalMin;
 }
 
 // Tolérance retard pour un employé (individuelle ou globale)
@@ -2320,6 +2430,8 @@ function getShiftStartMin(id){
 
 // Heure de fin de shift en minutes selon le jour (personnalisé ou standard)
 function getShiftEndMin(id, dateStr){
+  const p=getPeriodeHoraire(id,dateStr);
+  if(p) return timeToMin(p.end||'17:30');
   if(CFG.schedules[id]) return timeToMin(CFG.schedules[id].end||'17:30');
   const d = new Date((dateStr||'')+'T12:00:00');
   return d.getDay()===5 ? timeToMin('18:00') : timeToMin('17:30');
@@ -2337,7 +2449,7 @@ function getBreakMin(id, dateStr){
 function calcLateEffective(id, dateStr, checkin){
   const ci = timeToMin(checkin);
   if(ci===null) return 0;
-  const rawLate = ci - getShiftStartMin(id);
+  const rawLate = ci - getShiftStartMin(id, dateStr);
   if(rawLate<=0) return 0;
   return Math.max(0, rawLate - getTolerance(id));
 }
@@ -2461,7 +2573,9 @@ function renderHolidays(){
 function toggleHoliday(date, checked){
   if(checked) CFG.activeHolidays.add(date);
   else CFG.activeHolidays.delete(date);
-  refreshAll();
+  saveToStorage();
+  renderHolidays();
+  showSaveConfirm((checked?'Jour férié activé':'Jour férié désactivé')+' ✓');
 }
 
 function addCustomHoliday(){
@@ -2473,8 +2587,9 @@ function addCustomHoliday(){
   CFG.activeHolidays.add(date);
   document.getElementById('customHolidayDate').value='';
   document.getElementById('customHolidayName').value='';
+  saveToStorage();
   renderHolidays();
-  refreshAll();
+  showSaveConfirm('Jour férié ajouté ✓');
 }
 
 function renderCustomHolidayList(){
@@ -2490,8 +2605,9 @@ function renderCustomHolidayList(){
 function removeCustomHoliday(date){
   CFG.customHolidays = CFG.customHolidays.filter(h=>h.date!==date);
   CFG.activeHolidays.delete(date);
+  saveToStorage();
   renderHolidays();
-  refreshAll();
+  showSaveConfirm('Jour férié supprimé ✓');
 }
 
 // ── HORAIRES AMÉNAGÉS ─────────────────────────────────────────
@@ -2544,23 +2660,26 @@ function renderSchedules(){
 }
 
 function saveSchedule(id, field, value){
-  if(!CFG.schedules[id]) CFG.schedules[id] = {...DEFAULT_SCHED};
+  if(!CFG.schedules[id]) CFG.schedules[id] = {...DEFAULT_SCHED_STD};
   CFG.schedules[id][field] = value;
+  saveToStorage();
   renderSchedules();
-  refreshAll();
+  showSaveConfirm('Horaire enregistré ✓');
 }
 
 function resetSchedule(id){
   delete CFG.schedules[id];
+  saveToStorage();
   renderSchedules();
-  refreshAll();
+  showSaveConfirm('Horaire réinitialisé ✓');
 }
 
 // ── TOLÉRANCE RETARD ──────────────────────────────────────────
 function saveGlobalTolerance(){
   CFG.globalTolerance = parseInt(document.getElementById('globalTolerance').value)||0;
+  saveToStorage();
   renderTolerances();
-  refreshAll();
+  showSaveConfirm('Tolérance globale enregistrée ✓');
 }
 
 function renderTolerances(){
@@ -2594,14 +2713,16 @@ function renderTolerances(){
 function saveTolerance(id, val){
   if(val===''||val===null) delete CFG.tolerances[id];
   else CFG.tolerances[id] = parseInt(val)||0;
+  saveToStorage();
   renderTolerances();
-  refreshAll();
+  showSaveConfirm('Tolérance individuelle enregistrée ✓');
 }
 
 function resetTolerance(id){
   delete CFG.tolerances[id];
+  saveToStorage();
   renderTolerances();
-  refreshAll();
+  showSaveConfirm('Tolérance réinitialisée ✓');
 }
 
 // ── SWITCH PANELS ADMIN ───────────────────────────────────────
@@ -2613,6 +2734,7 @@ function switchAdminTab(name, el){
   if(name==='horaires') renderSchedules();
   if(name==='retard') renderTolerances();
   if(name==='feries') renderHolidays();
+  if(name==='periodes'){ renderPeriodes(); initPeriodeForm(); }
 }
 
 
@@ -2927,6 +3049,209 @@ document.addEventListener('DOMContentLoaded', ()=>{
   if(ct) ct.addEventListener('change', updateCongeCalc);
 });
 
+
+// ══════════════════════════════════════════════════════════════
+// DÉMARRAGE — restaurer les données au chargement
+// ══════════════════════════════════════════════════════════════
+window.addEventListener('load', function(){
+  try {
+    checkStorageVersion();
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw){
+      console.log('[Storage] Aucune donnée sauvegardée');
+      return;
+    }
+    const data = JSON.parse(raw);
+    if(!data || !data.rows || !data.rows.length){
+      console.log('[Storage] Données vides ou invalides');
+      return;
+    }
+    // Restaurer
+    DB.rows     = data.rows     || [];
+    DB.employes = data.employes || {};
+    DB.fichiers = data.fichiers || [];
+    DB.terrain  = data.terrain  || [];
+    DB.conges   = data.conges   || [];
+    if(data.cfg){
+      CFG.globalTolerance  = data.cfg.globalTolerance  || 0;
+      CFG.tolerances       = data.cfg.tolerances       || {};
+      CFG.schedules        = data.cfg.schedules        || {};
+      CFG.customHolidays   = data.cfg.customHolidays   || [];
+      CFG.periodesHoraires = data.cfg.periodesHoraires || [];
+      // Ajouter les fériés custom dans activeHolidays
+      CFG.customHolidays.forEach(h=>{ if(h.date) CFG.activeHolidays.add(h.date); });
+    }
+    console.log('[Storage] Restauré:', DB.rows.length, 'pointages,', DB.conges.length, 'congés');
+    // Reconstruire l'UI
+    refreshAll();
+    // Masquer le message "aucun fichier"
+    const empty = document.getElementById('importEmpty');
+    if(empty) empty.style.display = 'none';
+    // Notification
+    showNotif('✅ ' + DB.rows.length + ' pointages restaurés · ' + DB.conges.length + ' congé(s)');
+  } catch(e){
+    console.error('[Storage] Erreur restauration:', e);
+  }
+});
+
+function showNotif(msg){
+  const n = document.createElement('div');
+  n.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#15803d;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-family:"DM Sans",sans-serif;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.25)';
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(()=>n.style.opacity='0', 3000);
+  setTimeout(()=>n.remove(), 3600);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// PÉRIODES HORAIRES SPÉCIALES
+// ══════════════════════════════════════════════════════════════
+function initPeriodeForm(){
+  const sel = document.getElementById('periodeEmployes');
+  if(!sel) return;
+  sel.onchange = ()=>{
+    const v = sel.value;
+    const dRow = document.getElementById('periodeDeptRow');
+    const sRow = document.getElementById('periodeSelectRow');
+    if(dRow) dRow.style.display = v==='dept'?'':'none';
+    if(sRow) sRow.style.display = v==='select'?'':'none';
+    if(v==='select') buildPeriodeEmpCheckboxes();
+  };
+  // Calcul durée en temps réel
+  ['periodeStart','periodeEnd','periodeBreak'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('input', updatePeriodeDuree);
+  });
+  updatePeriodeDuree();
+}
+
+function updatePeriodeDuree(){
+  const s = document.getElementById('periodeStart')?.value;
+  const e = document.getElementById('periodeEnd')?.value;
+  const b = parseInt(document.getElementById('periodeBreak')?.value)||0;
+  const info = document.getElementById('periodeDureeInfo');
+  if(!info||!s||!e) return;
+  const [sh,sm]=s.split(':').map(Number), [eh,em]=e.split(':').map(Number);
+  const duree = (eh*60+em)-(sh*60+sm)-b;
+  if(duree>0){
+    info.textContent=`→ ${Math.floor(duree/60)}h${duree%60?duree%60+'min':''} de travail effectif par jour`;
+    info.style.color='var(--green)';
+  } else {
+    info.textContent='⚠️ Durée invalide';
+    info.style.color='var(--red)';
+  }
+}
+
+function buildPeriodeEmpCheckboxes(){
+  const el = document.getElementById('periodeEmpList');
+  if(!el) return;
+  el.innerHTML = Object.entries(DB.employes)
+    .filter(([,e])=>e.validated!==false&&!e.excluded)
+    .sort((a,b)=>a[1].name.localeCompare(b[1].name))
+    .map(([id,e])=>`<label style="display:flex;align-items:center;gap:5px;font-size:11px;cursor:pointer">
+      <input type="checkbox" class="periode-emp-chk" value="${id}" style="accent-color:var(--blue)">
+      ${e.name}
+    </label>`).join('');
+}
+
+function savePeriodeHoraire(){
+  const label    = document.getElementById('periodeLabel')?.value.trim();
+  const dateFrom = document.getElementById('periodeDateFrom')?.value;
+  const dateTo   = document.getElementById('periodeDateTo')?.value;
+  const start    = document.getElementById('periodeStart')?.value;
+  const end      = document.getElementById('periodeEnd')?.value;
+  const breakMin = parseInt(document.getElementById('periodeBreak')?.value)||0;
+  const empMode  = document.getElementById('periodeEmployes')?.value;
+
+  if(!label)    { alert('Saisissez un nom pour la période.'); return; }
+  if(!dateFrom||!dateTo){ alert('Saisissez les dates de début et fin.'); return; }
+  if(dateFrom>dateTo){ alert('La date de fin doit être après le début.'); return; }
+  if(!start||!end){ alert('Saisissez les heures.'); return; }
+
+  // Déterminer les employés concernés
+  let employes;
+  if(empMode==='all'){
+    employes = ['all'];
+  } else if(empMode==='dept'){
+    const dept = document.getElementById('periodeDept')?.value;
+    employes = Object.entries(DB.employes)
+      .filter(([,e])=>e.dept===dept&&e.validated!==false&&!e.excluded)
+      .map(([id])=>id);
+    if(!employes.length){ alert('Aucun employé dans ce département.'); return; }
+  } else {
+    employes = [...document.querySelectorAll('.periode-emp-chk:checked')].map(c=>c.value);
+    if(!employes.length){ alert('Sélectionnez au moins un employé.'); return; }
+  }
+
+  const [sh,sm]=start.split(':').map(Number), [eh,em]=end.split(':').map(Number);
+  const dureeMin = (eh*60+em)-(sh*60+sm)-breakMin;
+  if(dureeMin<=0){ alert('La durée de travail est invalide (vérifiez heures et pause).'); return; }
+
+  const periode = {
+    id: 'p_'+Date.now(),
+    label, dateFrom, dateTo,
+    employes, start, end, breakMin,
+    dureeMin
+  };
+
+  CFG.periodesHoraires.push(periode);
+  saveToStorage();
+  renderPeriodes();
+  showSaveConfirm('Période "'+label+'" enregistrée ✓');
+
+  // Vider le formulaire
+  document.getElementById('periodeLabel').value='';
+  document.getElementById('periodeDateFrom').value='';
+  document.getElementById('periodeDateTo').value='';
+  document.getElementById('periodeStart').value='08:00';
+  document.getElementById('periodeEnd').value='16:30';
+  document.getElementById('periodeBreak').value='30';
+  document.getElementById('periodeEmployes').value='all';
+  document.getElementById('periodeDeptRow').style.display='none';
+  document.getElementById('periodeSelectRow').style.display='none';
+  document.getElementById('periodeDureeInfo').textContent='';
+}
+
+function deletePeriodeHoraire(id){
+  if(!confirm('Supprimer cette période horaire ?')) return;
+  CFG.periodesHoraires = CFG.periodesHoraires.filter(p=>p.id!==id);
+  saveToStorage();
+  renderPeriodes();
+  showSaveConfirm('Période supprimée ✓');
+}
+
+function renderPeriodes(){
+  const el = document.getElementById('periodesList');
+  if(!el) return;
+  if(!CFG.periodesHoraires||!CFG.periodesHoraires.length){
+    el.innerHTML='<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:12px">Aucune période spéciale configurée</div>';
+    return;
+  }
+  const sorted = [...CFG.periodesHoraires].sort((a,b)=>a.dateFrom.localeCompare(b.dateFrom));
+  const fmtDate = d=>new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+  el.innerHTML = sorted.map(p=>{
+    const nbEmp = p.employes[0]==='all' ? 'Tous les employés' :
+      p.employes.length+' employé'+(p.employes.length>1?'s':'');
+    const h = Math.floor(p.dureeMin/60), m = p.dureeMin%60;
+    const duree = h+'h'+(m?m+'min':'');
+    const jours = joursOuvresConge(p.dateFrom, p.dateTo);
+    return `<div class="periode-card">
+      <div class="periode-card-hdr">
+        <div class="periode-card-title">📆 ${p.label}</div>
+        <span class="periode-dates">${fmtDate(p.dateFrom)} → ${fmtDate(p.dateTo)} · ${jours} j ouvrés</span>
+        <button class="btn-del-periode" onclick="deletePeriodeHoraire('${p.id}')">✗ Supprimer</button>
+      </div>
+      <div class="periode-horaire">
+        <div class="ph-item"><strong>${p.start}</strong> → <strong>${p.end}</strong></div>
+        <div class="ph-item">Pause : <strong>${p.breakMin} min</strong></div>
+        <div class="ph-item">Effectif : <strong>${duree}/jour</strong></div>
+        <div class="ph-scope">${nbEmp}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ══════════════════════════════════════════════════════════════
 // TRI & FILTRE PAR EN-TÊTE DE COLONNE
 // ══════════════════════════════════════════════════════════════
@@ -3184,6 +3509,70 @@ function destroyChart(k){if(charts[k]){charts[k].destroy();delete charts[k];}}
     </table></div>
   </div>
 </div>
+
+
+<script>
+
+// ══════════════════════════════════════════════════════════════
+// DEBUG PERSISTANCE — affiche l'état du localStorage
+// ══════════════════════════════════════════════════════════════
+function debugStorage(){
+  const banner = document.getElementById('debugStorageBanner');
+  if(!banner) return;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const ver = localStorage.getItem(STORAGE_KEY+'_version');
+    if(!raw){
+      banner.style.background='#b91c1c';
+      banner.textContent='⚠️ localStorage VIDE — clé: '+STORAGE_KEY+' | version sauvée: '+(ver||'aucune')+' | version code: '+STORAGE_VERSION;
+    } else {
+      const data = JSON.parse(raw);
+      banner.style.background='#15803d';
+      banner.textContent='💾 localStorage OK — '+( data.rows||[]).length+' pointages · '+(data.conges||[]).length+' congés · '+(data.fichiers||[]).length+' fichiers';
+    }
+    banner.style.display='block';
+  } catch(e){
+    banner.style.background='#b91c1c';
+    banner.textContent='❌ localStorage ERREUR: '+e.message;
+    banner.style.display='block';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// RESTAURATION AU DÉMARRAGE
+// ══════════════════════════════════════════════════════════════
+(function(){
+  // 1. Vérifier/purger les anciennes versions du stockage
+  checkStorageVersion();
+
+  // 2. Charger les données sauvegardées
+  const restored = loadFromStorage();
+
+  if(restored && DB.rows.length > 0){
+    // Données trouvées → reconstruire l'UI
+    refreshAll();
+
+    // Bandeau de confirmation discret
+    const banner = document.createElement('div');
+    banner.style.cssText = [
+      'position:fixed','bottom:16px','right:16px',
+      'background:#15803d','color:#fff',
+      'padding:10px 18px','border-radius:10px',
+      'font-size:12px','font-family:"DM Sans",sans-serif',
+      'z-index:9999','box-shadow:0 4px 12px rgba(0,0,0,.2)',
+      'transition:opacity .5s'
+    ].join(';');
+    const nb = DB.rows.length;
+    const nc = DB.conges.length;
+    const nf = DB.fichiers.length;
+    banner.textContent = '✅ ' + nb + ' pointages restaurés · ' + nc + ' congé(s) · ' + nf + ' fichier(s)';
+    document.body.appendChild(banner);
+    setTimeout(()=>{ banner.style.opacity='0'; }, 3500);
+    setTimeout(()=>{ banner.remove(); }, 4100);
+  }
+  debugStorage();
+})();
+</script>
 
 </body>
 </html>
