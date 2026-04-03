@@ -2379,10 +2379,11 @@ function saveTerrain(){
   document.getElementById('terrStart').value='';
   document.getElementById('terrEnd').value='';
   document.getElementById('terrNote').value='';
+  saveToStorage();
   renderTerrain();
   renderAbs();
   renderDet();
-  alert('Saisie terrain enregistrée ✓');
+  showSaveConfirm('Saisie terrain enregistrée ✓');
 }
 
 function renderTerrain(){
@@ -3229,7 +3230,9 @@ function saveConge(){
   document.getElementById('congeCalcInfo').textContent='';
   renderConges();
   refreshAll();
-  const joursCalc=joursOuvresConge(from,to); alert(`Congé enregistré — ${joursCalc} jour(s) ouvré(s) ✓`);
+  const joursCalc=joursOuvresConge(from,to);
+  saveToStorage();
+  showSaveConfirm(`Congé enregistré — ${joursCalc} jour(s) ouvré(s) ✓`);
 }
 
 // Calcul en temps réel
@@ -3259,8 +3262,10 @@ function updateCongeCalc(){
 function deleteConge(i){
   if(!confirm('Supprimer ce congé ?')) return;
   DB.conges.splice(i,1);
+  saveToStorage();
   renderConges();
   refreshAll();
+  showSaveConfirm('Congé supprimé ✓');
 }
 
 function renderConges(){
