@@ -1289,7 +1289,8 @@ async function sbReq(method, table, body=null, params=''){
   const r = await fetch(url, opts);
   if(!r.ok){
     const err = await r.text();
-    throw new Error(`Supabase ${method} ${table}: ${r.status} ${err.slice(0,100)}`);
+    console.error('[SB Error]', method, table, r.status, err.slice(0,200));
+    throw new Error(`${method} ${table} ${r.status}: ${err.slice(0,80)}`);
   }
   return method==='GET'||method==='DELETE'? r.json() : true;
 }
@@ -1406,10 +1407,17 @@ async function saveConfigToSB(){
 
 // Congé unique
 async function saveCongeToSB(c){
+  const empId = c.emp_id || c.id_emp || c.id || '';
   await sbReq('POST','conges',[{
-    id:c.id, emp_id:c.id||c.id_emp, name:c.name, dept:c.dept,
-    type:c.type, date_from:c.dateFrom, date_to:c.dateTo,
-    note:c.note||'', jours:c.jours||0
+    id:       c.id || ('c_'+Date.now()),
+    emp_id:   empId,
+    name:     c.name || '',
+    dept:     c.dept || '',
+    type:     c.type || 'CP',
+    date_from:c.dateFrom || c.date_from || '',
+    date_to:  c.dateTo   || c.date_to   || '',
+    note:     c.note || '',
+    jours:    c.jours || 0
   }]);
 }
 
@@ -1419,24 +1427,51 @@ async function deleteCongeFromSB(id){
 
 // Terrain
 async function saveTerrainToSB(t){
+  const tid = (t.emp_id||t.id||'')+'|'+(t.date||'');
   await sbReq('POST','terrain',[{
-    id: t.id+'|'+t.date,
-    emp_id:t.id, name:t.name, dept:t.dept, date:t.date,
-    start_time:t.start, end_time:t.end, conf:t.conf, note:t.note||''
+    id:         tid,
+    emp_id:     t.emp_id || t.id || '',
+    name:       t.name   || '',
+    dept:       t.dept   || '',
+    date:       t.date   || '',
+    start_time: t.start  || t.start_time || '',
+    end_time:   t.end    || t.end_time   || '',
+    conf:       t.conf   || '',
+    note:       t.note   || ''
   }]);
 }
 
 // Fichier importé
 async function saveFichierToSB(f){
-  await sbReq('POST','fichiers',[{name:f.name,size:f.size,rows:f.rows,date:f.date}]);
+  // id est SERIAL auto, on ne l'envoie pas
+  await sbReq('POST','fichiers',[{
+    name: f.name,
+    size: f.size||0,
+    rows: f.rows||0,
+    date: f.date||''
+  }]);
 }
 
 // Users
 async function saveUserToSB(u){
-  await sbReq('POST','users',[u]);
+  // Mapper les champs JS vers les colonnes Supabase
+  const row = {
+    id:       u.id,
+    name:     u.name,
+    email:    u.email,
+    password: u.password,
+    role:     u.role || 'viewer',
+    active:   u.active !== false
+    // created_at géré par Supabase automatiquement
+  };
+  await sbReq('POST','users',[row]);
 }
 async function updateUserInSB(u){
-  await sbReq('POST','users',[u]);
+  const row = {
+    id:u.id, name:u.name, email:u.email,
+    password:u.password, role:u.role||'viewer', active:u.active!==false
+  };
+  await sbReq('POST','users',[row]);
 }
 async function deleteUserFromSB(id){
   await sbReq('DELETE','users','',`?id=eq.${id}`);
@@ -3970,7 +4005,7 @@ async function migrateToSupabase(){
     hideLoadingBanner();
     if(errors.length){
       showNotif('⚠️ Migration partielle — '+errors.length+' erreur(s). Vérifiez la console.');
-      console.warn('[Migration] Erreurs:', errors);
+      console.warn('[Migration] Erreurs:', errors); alert('Erreurs:\n'+errors.join('\n'));
     } else {
       showSaveConfirm('✅ Migration complète — tout est dans Supabase !');
     }
