@@ -1075,7 +1075,7 @@ body.has-fullscreen .tabs { display:none }
         style="width:100%;padding:13px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:600;color:#fff;cursor:pointer;letter-spacing:.02em">
         Se connecter
       </button>
-      <p style="text-align:center;font-size:11px;color:#475569;margin-top:16px">Par défaut : admin@company.com / admin123</p>
+      <p style="text-align:center;font-size:11px;color:#475569;margin-top:16px">Par défaut : <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="afcecbc2c6c1efccc0c2dfcec1d681ccc0c2">[email&#160;protected]</a> / admin123</p>
     </div>
   </div>
 </div>
@@ -1130,7 +1130,7 @@ body.has-fullscreen .tabs { display:none }
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // Version: 20260402_223120
 window.onerror = function(msg, src, line, col, err) {
   document.getElementById('globalErrBanner')&&(
@@ -1820,29 +1820,57 @@ function computeStats(rows){
     e.datesCovered.add(r.date);
 
     if(r.status==='Absence'){
-      // Si congé validé ce jour → ne pas compter comme absence
+      // Si congé validé ce jour → jour de congé, ni absence ni présence
       if(isEnConge(r.id, r.date)){
-        e.congesMin=(e.congesMin||0)+1; // jour de congé (recalculé dynamiquement)
+        e.congesMin=(e.congesMin||0)+1;
       } else {
-        e.absTotal++;
-        const t=absType(r);
-        if(t==='abs-total')    e.absAucun++;
-        else if(t==='abs-depart')   e.absDepart++;
-        else if(t==='abs-arrivee')  e.absArrivee++;
+        const t = absType(r);
+
+        if(t==='abs-depart'){
+          // ── CAS CLÉ : CheckIn présent, CheckOut manquant ────────────
+          // L'employé a pointé à l'arrivée → il est PRÉSENT
+          // Le non-pointage en sortie est une ANOMALIE, pas une absence
+          e.datesPresent.add(r.date);
+          e.absDepart++;  // anomalie comptabilisée (à corriger)
+
+          // Retard sur le CheckIn réel
+          const lateEff = calcLateEffective(r.id, r.date, r.checkin);
+          if(lateEff>0){e.retards++;e.retardMin+=lateEff;}
+
+          // Temps validé = durée standard du shift (pas de checkout → on valide la journée)
+          const shiftMin = getShiftMin(r.id, r.date);
+          e.workedMin += shiftMin;
+          e.standardMin=(e.standardMin||0)+shiftMin;
+
+        } else if(t==='abs-arrivee'){
+          // ── CheckOut présent, CheckIn manquant ──────────────────────
+          // L'employé a pointé en sortie → on le considère présent avec anomalie
+          e.datesPresent.add(r.date);
+          e.absArrivee++;  // anomalie arrivée
+
+          // Temps validé = durée standard
+          const shiftMin = getShiftMin(r.id, r.date);
+          e.workedMin += shiftMin;
+          e.standardMin=(e.standardMin||0)+shiftMin;
+
+        } else {
+          // ── abs-total : aucun pointage → vraie absence ──────────────
+          e.absTotal++;
+          e.absAucun++;
+        }
       }
     } else {
       e.datesPresent.add(r.date);
-      // Retard recalculé depuis CheckIn (ignore iVMS qui a sa propre tolérance)
+      // Retard recalculé depuis CheckIn
       const lateEffective = calcLateEffective(r.id, r.date, r.checkin);
       if(lateEffective>0){e.retards++;e.retardMin+=lateEffective;}
-      // Départ anticipé recalculé depuis CheckOut vs fin de shift officielle
+      // Départ anticipé
       const earlyEffective = calcEarlyEffective(r.id, r.date, r.checkout);
       if(earlyEffective>0) e.departs++;
       e.earlyMin=(e.earlyMin||0)+earlyEffective;
-      // Temps travaillé recalculé : (CheckOut-CheckIn) - pause officielle
+      // Temps travaillé réel : (CheckOut-CheckIn) - pause
       const workedCalc = calcWorkedMin(r.id, r.date, r.checkin, r.checkout);
       e.workedMin+=workedCalc;
-      // Durée standard ce jour (pour calcul h.supp)
       e.standardMin=(e.standardMin||0)+getShiftMin(r.id,r.date);
     }
   });
@@ -1865,11 +1893,14 @@ function computeStats(rows){
     // Jours ouvrés sans AUCUNE ligne : utilise datesCovered précalculé (présence + absences déclarées)
     const absNonDeclares=ouvresDates.filter(d=>!e.datesCovered.has(d)).length;
     const absAucunTotal = e.absAucun + absNonDeclares;
-    const totalAbsences = absAucunTotal + e.absDepart + e.absArrivee;
+    // absDepart et absArrivee = anomalies sur jours PRÉSENTS → pas des absences
+    const totalAbsences = absAucunTotal;
+    const totalAnomalies = e.absDepart + e.absArrivee; // anomalies pointage (présent mais incomplet)
     return{
       id:e.id, name:e.name, dept:e.dept,
       presents,
       absTotal:   totalAbsences,
+      absAnomalies: totalAnomalies,
       absAucun:   absAucunTotal,   // Aucun pointage (total + non déclarées)
       absDepart:  e.absDepart,     // Arrivée OK, départ manquant
       absArrivee: e.absArrivee,    // Départ OK, arrivée manquante
@@ -1936,6 +1967,7 @@ function computeStats(rows){
     totalAbsAucun:  empList.reduce((s,e)=>s+e.absAucun,0),
     totalAbsDepart: empList.reduce((s,e)=>s+e.absDepart,0),
     totalAbsArrivee:empList.reduce((s,e)=>s+e.absArrivee,0),
+    totalAbsArrivee:empList.reduce((s,e)=>s+e.absArrivee,0),
     totalRetards:rows.filter(r=>!isJourNonOuvre(r.date)&&r.status!=='No Shift Schedule'&&r.status!=='Absence'&&calcLateEffective(r.id,r.date,r.checkin)>0).length,
     tauxMoyen:empList.length?+(empList.reduce((s,e)=>s+e.taux,0)/empList.length).toFixed(1):0,
     totalH:+(rows.reduce((s,r)=>s+r.worked,0)/60).toFixed(0),
@@ -1958,12 +1990,13 @@ function buildOverview(){
   const kpis=[
     {lbl:'Présences',      val:s.totalPresents, sub:s.joursOuvres+' jours ouvrés', accent:'#3b82f6', trend:'neu'},
     {lbl:'Taux présence',  val:s.tauxMoyen+'%', sub:'moyenne équipe',              accent:'#10b981', trend:s.tauxMoyen>=80?'up':'down'},
-    {lbl:'Anomalies',      val:s.totalAbsences, sub:'tous types confondus',        accent:'#e11d48', trend:s.totalAbsences>10?'down':'neu'},
+    {lbl:'Abs. non justifiées',val:s.totalAbsences,sub:'aucun pointage',           accent:'#e11d48', trend:s.totalAbsences>10?'down':'neu'},
+    {lbl:'Anomalies pointage',val:s.totalAbsDepart+s.totalAbsArrivee,sub:'présent sans checkout/in', accent:'#7c3aed', trend:'neu'},
     {lbl:'Retards',        val:s.totalRetards,  sub:'après tolérance',             accent:'#f59e0b', trend:'neu'},
-    {lbl:'Sans pointage',  val:s.totalAbsAucun, sub:'ni arrivée ni départ',        accent:'#9d174d', trend:'down'},
+
     {lbl:'Dép. manquant',  val:s.totalAbsDepart,sub:'arrivée OK',                  accent:'#7c3aed', trend:'neu'},
     {lbl:'Arr. manquante', val:s.totalAbsArrivee,sub:'départ OK',                  accent:'#b45309', trend:'neu'},
-    {lbl:'H. travaillées', val:s.totalH+'h',    sub:'total équipe',                accent:'#06b6d4', trend:'neu'},
+
   ];
   const trendHtml={up:'<span class="ov-kpi-trend trend-up">↑</span>',down:'<span class="ov-kpi-trend trend-down">↓</span>',neu:''};
   const grid=document.getElementById('ovKpiGrid');
@@ -2094,7 +2127,7 @@ function renderEmp(){
     <td><div class="ename">${e.name}${isNew(e.id)?'<span class="new-tag">NOUVEAU</span>':''}</div><div class="eid">${e.id}</div></td>
     <td><span class="db db-${e.dept}">${e.dept}</span></td>
     <td style="font-weight:500;text-align:center">${e.presents}</td>
-    <td style="text-align:center;background:${e.absTotal>0?'#fdf2f8':''};color:${e.absTotal>5?'#9d174d':e.absTotal>2?'#be185d':'inherit'};font-weight:${e.absTotal>0?600:400}">${e.absTotal}</td>
+    <td style="text-align:center;background:${(e.absDepart+e.absArrivee)>0?'#f5f3ff':''};color:${(e.absDepart+e.absArrivee)>5?'#6d28d9':(e.absDepart+e.absArrivee)>0?'#7c3aed':'inherit'};font-weight:${(e.absDepart+e.absArrivee)>0?600:400}">${e.absDepart+e.absArrivee}</td>
     <td style="text-align:center;background:${e.absAucun>0?'#fff1f2':''};color:${e.absAucun>3?'#881337':e.absAucun>0?'#b91c1c':'inherit'};font-weight:${e.absAucun>0?600:400}">${e.absAucun}</td>
     <td style="text-align:center;background:${e.absDepart>0?'#f5f3ff':''};color:${e.absDepart>3?'#4c1d95':e.absDepart>0?'#7c3aed':'inherit'};font-weight:${e.absDepart>0?600:400}">${e.absDepart}</td>
     <td style="text-align:center;background:${e.absArrivee>0?'#fffbeb':''};color:${e.absArrivee>2?'#78350f':e.absArrivee>0?'#b45309':'inherit'};font-weight:${e.absArrivee>0?600:400}">${e.absArrivee}</td>
@@ -2233,6 +2266,12 @@ function renderDet(){
         }
         if(isFerie(r.date)) return '<span class="sb" style="background:#f0fdf4;color:#15803d">🗓 Jour férié</span>';
         if(isWeekend(r.date)||r.status==='No Shift Schedule') return '<span class="sb sb-nosh">Jour de repos</span>';
+        // Absence avec CheckIn → présent avec anomalie départ
+        if(r.status==='Absence'&&r.checkin&&r.checkin!=='-'&&(!r.checkout||r.checkout==='-'))
+          return '<span class="sb" style="background:#f5f3ff;color:#7c3aed">⚠️ Anom. départ</span>';
+        // Absence avec CheckOut → présent avec anomalie arrivée
+        if(r.status==='Absence'&&(!r.checkin||r.checkin==='-')&&r.checkout&&r.checkout!=='-')
+          return '<span class="sb" style="background:#fef3c7;color:#b45309">⚠️ Anom. arrivée</span>';
         return stBadge(r.status);
       })()}</td>
       <td style="font-weight:500;color:${r.checkin&&r.checkin!=='-'?'#15803d':'#b91c1c'}">${r.checkin&&r.checkin!=='-'?r.checkin:'✗ absent'}</td>
@@ -3015,7 +3054,7 @@ function renderFsEmp(){
     <td style="text-align:center;background:${e.absAucun>0?'#fff1f2':''};color:${e.absAucun>3?'#881337':e.absAucun>0?'#b91c1c':'inherit'};font-weight:${e.absAucun>0?600:400}">${e.absAucun}</td>
     <td style="text-align:center;background:${e.absDepart>0?'#f5f3ff':''};color:${e.absDepart>0?'#7c3aed':'inherit'};font-weight:${e.absDepart>0?600:400}">${e.absDepart}</td>
     <td style="text-align:center;background:${e.absArrivee>0?'#fffbeb':''};color:${e.absArrivee>0?'#b45309':'inherit'};font-weight:${e.absArrivee>0?600:400}">${e.absArrivee}</td>
-    <td style="text-align:center;background:${e.absTotal>0?'#fdf2f8':''};color:${e.absTotal>5?'#9d174d':e.absTotal>2?'#be185d':'inherit'};font-weight:${e.absTotal>0?600:400}">${e.absTotal}</td>
+    <td style="text-align:center;background:${(e.absDepart+e.absArrivee)>0?'#f5f3ff':''};color:${(e.absDepart+e.absArrivee)>5?'#6d28d9':(e.absDepart+e.absArrivee)>0?'#7c3aed':'inherit'};font-weight:${(e.absDepart+e.absArrivee)>0?600:400}">${e.absDepart+e.absArrivee}</td>
     <td style="text-align:center;color:${e.retards>=5?'#b91c1c':e.retards>=2?'#b45309':'inherit'};font-weight:${e.retards>=2?600:400}">${e.retards}</td>
     <td style="text-align:center">${e.h_retard}h</td>
     <td style="text-align:center">${e.h_travail}h</td>
@@ -3092,6 +3131,12 @@ function renderFsDet(){
         }
         if(isFerie(r.date)) return '<span class="sb" style="background:#f0fdf4;color:#15803d">🗓 Jour férié</span>';
         if(isWeekend(r.date)||r.status==='No Shift Schedule') return '<span class="sb sb-nosh">Jour de repos</span>';
+        // Absence avec CheckIn → présent avec anomalie départ
+        if(r.status==='Absence'&&r.checkin&&r.checkin!=='-'&&(!r.checkout||r.checkout==='-'))
+          return '<span class="sb" style="background:#f5f3ff;color:#7c3aed">⚠️ Anom. départ</span>';
+        // Absence avec CheckOut → présent avec anomalie arrivée
+        if(r.status==='Absence'&&(!r.checkin||r.checkin==='-')&&r.checkout&&r.checkout!=='-')
+          return '<span class="sb" style="background:#fef3c7;color:#b45309">⚠️ Anom. arrivée</span>';
         return stBadge(r.status);
       })()}</td>
       <td style="font-weight:500">${r.checkin||'—'}</td>
@@ -3929,14 +3974,4 @@ function debugStorage(){
     const nb = DB.rows.length;
     const nc = DB.conges.length;
     const nf = DB.fichiers.length;
-    banner.textContent = '✅ ' + nb + ' pointages restaurés · ' + nc + ' congé(s) · ' + nf + ' fichier(s)';
-    document.body.appendChild(banner);
-    setTimeout(()=>{ banner.style.opacity='0'; }, 3500);
-    setTimeout(()=>{ banner.remove(); }, 4100);
-  }
-  debugStorage();
-})();
-</script>
-
-</body>
-</html>
+    banner.textContent = '✅ ' + nb + ' pointages restaurés · ' + nc + ' congé(s
