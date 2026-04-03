@@ -503,10 +503,10 @@ body.has-fullscreen .tabs { display:none }
   <th class="sortable" onclick="thSort('emp','name')">Employé</th>
   <th class="filterable" onclick="thFilter(event,'emp','dept')">Dépt.<div class="col-dropdown" id="fd-emp-dept"></div></th>
   <th class="sortable" onclick="thSort('emp','presents')">Présences</th>
-  <th class="sortable" onclick="thSort('emp','absTotal')" style="background:#7b1f40">Abs. totales</th>
   <th class="sortable" onclick="thSort('emp','absAucun')" style="background:#881337">Aucun pointage</th>
   <th class="sortable" onclick="thSort('emp','absDepart')" style="background:#5b21b6">Départ manquant</th>
   <th class="sortable" onclick="thSort('emp','absArrivee')" style="background:#92400e">Arrivée manquante</th>
+  <th class="sortable" onclick="thSort('emp','absTotal')" style="background:#7b1f40">Anomalies pointages</th>
   <th class="sortable" onclick="thSort('emp','retards')">Retards</th>
   <th class="sortable" onclick="thSort('emp','h_retard')">H.Retard</th>
   <th class="sortable" onclick="thSort('emp','h_travail')">H.Travail</th>
@@ -635,7 +635,7 @@ body.has-fullscreen .tabs { display:none }
     </div>
   </div>
   <div class="card">
-    <div class="card-title">Classement absences totales (top 12)</div>
+    <div class="card-title">Classement anomalies pointages (top 12)</div>
     <div style="position:relative;height:320px"><canvas id="chartRet"></canvas></div>
   </div>
 </div>
@@ -1742,7 +1742,7 @@ function buildOverview(){
 
   document.getElementById('kpiGrid').innerHTML=`
     <div class="kpi c-blue"><div class="kpi-lbl">Présences</div><div class="kpi-val">${s.totalPresents}</div><div class="kpi-sub">${s.joursOuvres} jours ouvrés</div></div>
-    <div class="kpi c-red"><div class="kpi-lbl">Absences totales</div><div class="kpi-val">${s.totalAbsences}</div><div class="kpi-sub">tous types confondus</div></div>
+    <div class="kpi c-red"><div class="kpi-lbl">Anomalies pointages</div><div class="kpi-val">${s.totalAbsences}</div><div class="kpi-sub">total tous types</div></div>
     <div class="kpi c-absence"><div class="kpi-lbl">Aucun pointage</div><div class="kpi-val">${s.totalAbsAucun}</div><div class="kpi-sub">ni arrivée ni départ</div></div>
     <div class="kpi c-depart"><div class="kpi-lbl">Départ manquant</div><div class="kpi-val">${s.totalAbsDepart}</div><div class="kpi-sub">arrivée OK, pas de départ</div></div>
     <div class="kpi c-arrivee"><div class="kpi-lbl">Arrivée manquante</div><div class="kpi-val">${s.totalAbsArrivee}</div><div class="kpi-sub">départ OK, pas d'arrivée</div></div>
@@ -1805,7 +1805,7 @@ function buildOverview(){
         <div class="ds"><div class="ds-val" style="color:var(--orange)">${d.retards}</div><div class="ds-lbl">Retards</div></div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px">
-        <div class="ds" style="background:#fff1f2"><div class="ds-val" style="color:#9d174d;font-size:16px">${d.absences}</div><div class="ds-lbl">Abs. totales</div></div>
+        <div class="ds" style="background:#fff1f2"><div class="ds-val" style="color:#9d174d;font-size:16px">${d.absences}</div><div class="ds-lbl">Anomalies pointages</div></div>
         <div class="ds" style="background:#f5f3ff"><div class="ds-val" style="color:#7c3aed;font-size:16px">${d.absDepart}</div><div class="ds-lbl">Dép. manquant</div></div>
         <div class="ds" style="background:#fffbeb"><div class="ds-val" style="color:#b45309;font-size:16px">${d.absArrivee}</div><div class="ds-lbl">Arr. manquante</div></div>
       </div>
@@ -2786,10 +2786,10 @@ function renderFsEmp(){
     <td><div class="ename">${e.name}</div><div class="eid">${e.id}</div></td>
     <td><span class="db db-${e.dept}">${e.dept}</span></td>
     <td style="text-align:center;font-weight:500">${e.presents}</td>
-    <td style="text-align:center;background:${e.absTotal>0?'#fdf2f8':''};color:${e.absTotal>5?'#9d174d':e.absTotal>2?'#be185d':'inherit'};font-weight:${e.absTotal>0?600:400}">${e.absTotal}</td>
     <td style="text-align:center;background:${e.absAucun>0?'#fff1f2':''};color:${e.absAucun>3?'#881337':e.absAucun>0?'#b91c1c':'inherit'};font-weight:${e.absAucun>0?600:400}">${e.absAucun}</td>
     <td style="text-align:center;background:${e.absDepart>0?'#f5f3ff':''};color:${e.absDepart>0?'#7c3aed':'inherit'};font-weight:${e.absDepart>0?600:400}">${e.absDepart}</td>
     <td style="text-align:center;background:${e.absArrivee>0?'#fffbeb':''};color:${e.absArrivee>0?'#b45309':'inherit'};font-weight:${e.absArrivee>0?600:400}">${e.absArrivee}</td>
+    <td style="text-align:center;background:${e.absTotal>0?'#fdf2f8':''};color:${e.absTotal>5?'#9d174d':e.absTotal>2?'#be185d':'inherit'};font-weight:${e.absTotal>0?600:400}">${e.absTotal}</td>
     <td style="text-align:center;color:${e.retards>=5?'#b91c1c':e.retards>=2?'#b45309':'inherit'};font-weight:${e.retards>=2?600:400}">${e.retards}</td>
     <td style="text-align:center">${e.h_retard}h</td>
     <td style="text-align:center">${e.h_travail}h</td>
@@ -3453,7 +3453,7 @@ function destroyChart(k){if(charts[k]){charts[k].destroy();delete charts[k];}}
     <div class="tscroll"><table id="fsEmpTable">
       <thead><tr>
         <th>Employé</th><th>Dépt.</th><th>Présences</th>
-        <th style="background:#7b1f40">Abs. totales</th>
+        <th style="background:#7b1f40">Anomalies pointages</th>
         <th style="background:#881337">Aucun pointage</th>
         <th style="background:#5b21b6">Dép. manquant</th>
         <th style="background:#92400e">Arr. manquante</th>
