@@ -388,6 +388,42 @@ body.has-fullscreen .tabs { display:none }
 .ct-sm{background:#fce7f3;color:#9d174d}
 .ct-ex{background:#f3e8ff;color:#7c3aed}
 
+
+/* ── OVERVIEW REDESIGN ──────────────────────────────────────── */
+#page-overview{background:transparent}
+.ov-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:1100px){.ov-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.ov-grid{grid-template-columns:1fr 1fr}}
+.ov-kpi{background:#0f172a;border-radius:16px;padding:20px 22px;border:1px solid #1e293b;position:relative;overflow:hidden;cursor:default;transition:transform .15s,box-shadow .15s}
+.ov-kpi:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.ov-kpi-accent{position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0}
+.ov-kpi-lbl{font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.ov-kpi-val{font-family:'Syne',sans-serif;font-size:38px;font-weight:800;line-height:1;color:#fff;margin-bottom:6px}
+.ov-kpi-sub{font-size:11px;color:#475569;display:flex;align-items:center;gap:5px}
+.ov-kpi-trend{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.trend-up{background:#0d2a1f;color:#34d399}.trend-down{background:#2a0d0d;color:#f87171}.trend-neu{background:#1e293b;color:#64748b}
+.ov-row{display:grid;grid-template-columns:1.1fr 2fr;gap:14px;margin-bottom:14px}
+@media(max-width:900px){.ov-row{grid-template-columns:1fr}}
+.ov-card{background:#0f172a;border-radius:16px;border:1px solid #1e293b;overflow:hidden}
+.ov-card-hdr{padding:16px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.ov-card-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em}
+.ov-dept-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.ov-dept-row{grid-template-columns:1fr}}
+.ov-dept{background:#0f172a;border-radius:16px;border:1px solid #1e293b;padding:18px 20px}
+.ov-dept-name{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;margin-bottom:4px}
+.ov-dept-sub{font-size:11px;color:#475569;margin-bottom:14px}
+.ov-dept-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ov-ds{text-align:center;background:#0a0f1e;border-radius:10px;padding:10px 6px}
+.ov-ds-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;line-height:1;margin-bottom:3px}
+.ov-ds-lbl{font-size:9px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.05em}
+.ov-pbar{height:3px;border-radius:2px;background:#1e293b;margin-top:12px;overflow:hidden}
+.ov-pfill{height:100%;border-radius:2px;transition:width .6s ease}
+.ov-legend{display:flex;flex-wrap:wrap;gap:10px;padding:0 20px 14px}
+.ov-li{display:flex;align-items:center;gap:6px;font-size:11px;color:#64748b}
+.ov-ld{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+/* Masquer l'ancienne kpi-grid sur la page overview */
+#page-overview .kpi-grid{display:none}
+
 /* DEPT GRID */
 .dept-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem}
 @media(max-width:800px){.dept-grid{grid-template-columns:1fr}}
@@ -423,11 +459,21 @@ body.has-fullscreen .tabs { display:none }
         <option value="">Toute la période</option>
       </select>
     </div>
-    <label class="btn-imp">
+    <label class="btn-imp" id="btnImport" style="display:none">
       <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 3v9M7 9l3 3 3-3M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
       Importer
       <input type="file" id="fileIn" accept=".xlsx,.xls" multiple style="display:none" onchange="handleFiles(event)">
     </label>
+    <div id="userBadge" style="display:none;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);border-radius:9px;padding:5px 12px">
+        <div id="userAvatar" style="width:26px;height:26px;border-radius:50%;background:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0"></div>
+        <div>
+          <div id="userName" style="font-size:12px;font-weight:500;color:#fff;line-height:1.2"></div>
+          <div id="userRole" style="font-size:10px;color:#93c5fd;line-height:1.2"></div>
+        </div>
+      </div>
+      <button onclick="logout()" style="background:rgba(255,255,255,.08);border:none;color:#93c5fd;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif" title="Déconnexion">⏻</button>
+    </div>
   </div>
 </div>
 
@@ -442,26 +488,34 @@ body.has-fullscreen .tabs { display:none }
   <div class="tab" onclick="showPage('conges',this)">🏖 Congés</div>
   <div class="tab" onclick="showPage('import',this)">📂 Fichiers</div>
   <div class="tab" onclick="showPage('admin',this)">⚙️ Admin</div>
+  <div class="tab" id="tabUsers" style="display:none" onclick="openUsersModal()">👥 Comptes</div>
 </div>
 
 <div class="content">
 
 <!-- ══ VUE D'ENSEMBLE ══ -->
-<div class="page active" id="page-overview">
-  <div class="period-bar" id="periodBar"><span class="period-lbl">Période :</span></div>
-  <div class="kpi-grid" id="kpiGrid"></div>
-  <div style="display:grid;grid-template-columns:1fr 1.8fr;gap:14px;margin-bottom:1.5rem">
-    <div class="card">
-      <div class="card-title">Statuts du mois</div>
-      <div class="legend" id="donutLegend"></div>
-      <div style="position:relative;height:200px"><canvas id="chartDonut"></canvas></div>
+<div class="page active" id="page-overview" style="background:#060a15;min-height:calc(100vh - 120px);padding:20px;margin:-1.5rem">
+  <div class="period-bar" id="periodBar" style="background:transparent;border:none;padding:0 0 16px"><span class="period-lbl" style="color:#94a3b8">Période :</span></div>
+  <!-- KPIs -->
+  <div class="ov-grid" id="ovKpiGrid"></div>
+  <!-- Charts row -->
+  <div class="ov-row">
+    <div class="ov-card">
+      <div class="ov-card-hdr">
+        <span class="ov-card-title">Répartition</span>
+      </div>
+      <div class="ov-legend" id="ovDonutLegend"></div>
+      <div style="padding:0 20px 20px;position:relative;height:200px"><canvas id="chartDonut"></canvas></div>
     </div>
-    <div class="card">
-      <div class="card-title">Présences par jour</div>
-      <div style="position:relative;height:220px"><canvas id="chartDaily"></canvas></div>
+    <div class="ov-card">
+      <div class="ov-card-hdr" style="margin-bottom:4px">
+        <span class="ov-card-title">Présences par jour</span>
+      </div>
+      <div style="padding:8px 20px 16px;position:relative;height:220px"><canvas id="chartDaily"></canvas></div>
     </div>
   </div>
-  <div class="dept-grid" id="deptGrid"></div>
+  <!-- Dept row -->
+  <div class="ov-dept-row" id="ovDeptGrid"></div>
 </div>
 
 <!-- ══ EMPLOYÉS ══ -->
@@ -983,6 +1037,87 @@ body.has-fullscreen .tabs { display:none }
 
 </div><!-- .content -->
 
+
+<!-- ══ ÉCRAN DE LOGIN ══ -->
+<div id="loginScreen" style="display:none;position:fixed;inset:0;background:#0a0f1e;z-index:5000;display:flex;align-items:center;justify-content:center">
+  <div style="width:100%;max-width:420px;padding:0 20px">
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="width:52px;height:52px;background:linear-gradient(135deg,#1d4ed8,#7c3aed);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+        <svg width="26" height="26" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="white" stroke-width="1.5"/><path d="M10 6v4l2.5 2.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <h1 style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;margin-bottom:4px">Tableau de Bord Pointage</h1>
+      <p style="font-size:13px;color:#64748b">Hikvision iVMS-4200</p>
+    </div>
+    <!-- Card login -->
+    <div style="background:#111827;border:1px solid #1e293b;border-radius:20px;padding:32px">
+      <div id="loginError" style="display:none;background:#450a0a;border:1px solid #7f1d1d;border-radius:10px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-bottom:16px"></div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:11px;font-weight:500;color:#94a3b8;display:block;margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase">Email</label>
+        <input id="loginEmail" type="email" placeholder="admin@company.com"
+          style="width:100%;padding:12px 14px;background:#1e293b;border:1px solid #334155;border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;color:#fff;outline:none"
+          onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#334155'"
+          onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()">
+      </div>
+      <div style="margin-bottom:24px">
+        <label style="font-size:11px;font-weight:500;color:#94a3b8;display:block;margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase">Mot de passe</label>
+        <div style="position:relative">
+          <input id="loginPass" type="password" placeholder="••••••••"
+            style="width:100%;padding:12px 40px 12px 14px;background:#1e293b;border:1px solid #334155;border-radius:10px;font-size:13px;font-family:'DM Sans',sans-serif;color:#fff;outline:none"
+            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#334155'"
+            onkeydown="if(event.key==='Enter') doLogin()">
+          <button onclick="togglePassVis()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#64748b;padding:4px">
+            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4C5 4 1.5 10 1.5 10S5 16 10 16s8.5-6 8.5-6S15 4 10 4z" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>
+          </button>
+        </div>
+      </div>
+      <button onclick="doLogin()"
+        style="width:100%;padding:13px;background:linear-gradient(135deg,#1d4ed8,#2563eb);border:none;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:600;color:#fff;cursor:pointer;letter-spacing:.02em">
+        Se connecter
+      </button>
+      <p style="text-align:center;font-size:11px;color:#475569;margin-top:16px">Par défaut : admin@company.com / admin123</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GESTION COMPTES -->
+<div class="modal-bg" id="modalUsers">
+  <div class="modal" style="width:680px;max-width:96vw">
+    <h2>👥 Gestion des comptes</h2>
+    <p>Créez et gérez les accès au tableau de bord. <strong>Superadmin</strong> seul peut gérer les comptes.</p>
+    <div style="margin-bottom:16px">
+      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Comptes existants</div>
+      <div id="usersList"></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:16px">
+      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Nouveau compte</div>
+      <div class="form-row">
+        <div class="form-group"><label>Nom complet</label><input type="text" id="newUserName" placeholder="Jean Dupont"></div>
+        <div class="form-group"><label>Email</label><input type="email" id="newUserEmail" placeholder="jean@company.com"></div>
+      </div>
+      <div class="form-row" style="margin-top:10px">
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="newUserPass" placeholder="Minimum 6 caractères">
+        </div>
+        <div class="form-group">
+          <label>Rôle</label>
+          <select id="newUserRole">
+            <option value="viewer">Lecteur — consultation uniquement</option>
+            <option value="rh">RH — import + congés + terrain</option>
+            <option value="admin">Administrateur — tout sauf comptes</option>
+            <option value="superadmin">Super Admin — accès complet</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+        <button class="btn btn-ghost" onclick="closeModal('modalUsers')">Fermer</button>
+        <button class="btn btn-primary" onclick="createUser()">Créer le compte</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL TERRAIN DETAIL -->
 <div class="modal-bg" id="modalTerrain">
   <div class="modal">
@@ -1014,7 +1149,7 @@ const DB = {
   fichiers: [],
   terrain: [],        // saisies terrain manuelles
   pendingEmps: [],    // nouveaux employés en attente de validation
-  conges: [],         // congés saisis manuellement [{id,name,dept,dateFrom,dateTo,type,note,jours}]
+  conges: [],         // conges saisis manuellement
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -1126,6 +1261,85 @@ function storageInfo(){
 
 
 const SHIFT_MIN = 480; // 8h = durée standard Lun-Jeu et Vendredi (hors pause)
+
+// ── GESTION UTILISATEURS ──────────────────────────────────────
+const USERS_KEY = 'hk_users';
+const SESSION_KEY = 'hk_session';
+
+// Rôles et permissions
+const ROLES = {
+  superadmin: { lbl:'Super Admin',    color:'#7c3aed', perms:['all'] },
+  admin:      { lbl:'Administrateur', color:'#1d4ed8', perms:['import','admin','conges','terrain'] },
+  rh:         { lbl:'RH',             color:'#15803d', perms:['import','conges','terrain'] },
+  viewer:     { lbl:'Lecteur',        color:'#64748b', perms:[] },
+};
+
+let currentUser = null; // utilisateur connecté
+
+// Hash simple (pas cryptographique, suffisant pour usage interne)
+function simpleHash(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0;}
+  return h.toString(36);
+}
+
+function getUsers(){
+  try{ return JSON.parse(localStorage.getItem(USERS_KEY)||'[]'); }
+  catch(e){ return []; }
+}
+function saveUsers(users){ localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+
+function initDefaultUsers(){
+  const users = getUsers();
+  if(!users.length){
+    // Créer le compte superadmin par défaut
+    saveUsers([{
+      id:'u_default',
+      name:'Administrateur',
+      email:'admin@company.com',
+      password: simpleHash('admin123'),
+      role:'superadmin',
+      createdAt: new Date().toISOString(),
+      active: true
+    }]);
+  }
+}
+
+function login(email, password){
+  const users = getUsers();
+  const u = users.find(u=>u.email===email && u.password===simpleHash(password) && u.active!==false);
+  if(!u) return false;
+  currentUser = u;
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({id:u.id, name:u.name, role:u.role}));
+  return true;
+}
+
+function logout(){
+  currentUser = null;
+  sessionStorage.removeItem(SESSION_KEY);
+  showLoginScreen();
+}
+
+function restoreSession(){
+  try{
+    const s = sessionStorage.getItem(SESSION_KEY);
+    if(!s) return false;
+    const sess = JSON.parse(s);
+    const users = getUsers();
+    const u = users.find(u=>u.id===sess.id && u.active!==false);
+    if(!u) return false;
+    currentUser = u;
+    return true;
+  }catch(e){ return false; }
+}
+
+function canDo(perm){
+  if(!currentUser) return false;
+  const r = ROLES[currentUser.role];
+  if(!r) return false;
+  return r.perms.includes('all') || r.perms.includes(perm);
+}
+
 let charts = {};
 let empPage=0, detPage=0, absPage=0;
 let PER = 20; // modifiable via le sélecteur de lignes par page
@@ -1740,15 +1954,26 @@ function buildOverview(){
   if(!rows.length) return;
   const s=computeStats(rows);
 
-  document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi c-blue"><div class="kpi-lbl">Présences</div><div class="kpi-val">${s.totalPresents}</div><div class="kpi-sub">${s.joursOuvres} jours ouvrés</div></div>
-    <div class="kpi c-red"><div class="kpi-lbl">Anomalies pointages</div><div class="kpi-val">${s.totalAbsences}</div><div class="kpi-sub">total tous types</div></div>
-    <div class="kpi c-absence"><div class="kpi-lbl">Aucun pointage</div><div class="kpi-val">${s.totalAbsAucun}</div><div class="kpi-sub">ni arrivée ni départ</div></div>
-    <div class="kpi c-depart"><div class="kpi-lbl">Départ manquant</div><div class="kpi-val">${s.totalAbsDepart}</div><div class="kpi-sub">arrivée OK, pas de départ</div></div>
-    <div class="kpi c-arrivee"><div class="kpi-lbl">Arrivée manquante</div><div class="kpi-val">${s.totalAbsArrivee}</div><div class="kpi-sub">départ OK, pas d'arrivée</div></div>
-    <div class="kpi c-orange"><div class="kpi-lbl">Retards</div><div class="kpi-val">${s.totalRetards}</div><div class="kpi-sub">après tolérance</div></div>
-    <div class="kpi c-green"><div class="kpi-lbl">Taux présence</div><div class="kpi-val">${s.tauxMoyen}%</div><div class="kpi-sub">moyenne équipe</div></div>
-    <div class="kpi c-navy"><div class="kpi-lbl">H. travaillées</div><div class="kpi-val">${s.totalH}h</div><div class="kpi-sub">total équipe</div></div>`;
+  // ── KPIs redesign ─────────────────────────────────────────
+  const kpis=[
+    {lbl:'Présences',      val:s.totalPresents, sub:s.joursOuvres+' jours ouvrés', accent:'#3b82f6', trend:'neu'},
+    {lbl:'Taux présence',  val:s.tauxMoyen+'%', sub:'moyenne équipe',              accent:'#10b981', trend:s.tauxMoyen>=80?'up':'down'},
+    {lbl:'Anomalies',      val:s.totalAbsences, sub:'tous types confondus',        accent:'#e11d48', trend:s.totalAbsences>10?'down':'neu'},
+    {lbl:'Retards',        val:s.totalRetards,  sub:'après tolérance',             accent:'#f59e0b', trend:'neu'},
+    {lbl:'Sans pointage',  val:s.totalAbsAucun, sub:'ni arrivée ni départ',        accent:'#9d174d', trend:'down'},
+    {lbl:'Dép. manquant',  val:s.totalAbsDepart,sub:'arrivée OK',                  accent:'#7c3aed', trend:'neu'},
+    {lbl:'Arr. manquante', val:s.totalAbsArrivee,sub:'départ OK',                  accent:'#b45309', trend:'neu'},
+    {lbl:'H. travaillées', val:s.totalH+'h',    sub:'total équipe',                accent:'#06b6d4', trend:'neu'},
+  ];
+  const trendHtml={up:'<span class="ov-kpi-trend trend-up">↑</span>',down:'<span class="ov-kpi-trend trend-down">↓</span>',neu:''};
+  const grid=document.getElementById('ovKpiGrid');
+  if(grid) grid.innerHTML=kpis.map(k=>`
+    <div class="ov-kpi">
+      <div class="ov-kpi-accent" style="background:${k.accent}"></div>
+      <div class="ov-kpi-lbl">${k.lbl}</div>
+      <div class="ov-kpi-val">${k.val}</div>
+      <div class="ov-kpi-sub">${k.sub} ${trendHtml[k.trend]}</div>
+    </div>`).join('');
 
   // Donut statuts
   // On construit le donut avec les 3 types d'absence détaillés
@@ -1769,10 +1994,11 @@ function buildOverview(){
   charts.donut=new Chart(document.getElementById('chartDonut'),{
     type:'doughnut',
     data:{labels:stKeys.map(k=>stLabels[k]),datasets:[{data:stData,backgroundColor:stKeys.map(k=>stColors[k]),borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'70%',backgroundColor:'transparent'}
   });
-  document.getElementById('donutLegend').innerHTML=stKeys.map((k,i)=>
-    `<div class="li"><span class="ld" style="background:${stColors[k]}"></span>${stLabels[k]} (${stData[i]})</div>`).join('');
+  const ovLegend=document.getElementById('ovDonutLegend');
+  if(ovLegend) ovLegend.innerHTML=stKeys.map((k,i)=>
+    `<div class="ov-li"><span class="ov-ld" style="background:${stColors[k]}"></span>${stLabels[k]} <span style='color:#94a3b8;margin-left:2px'>${stData[i]}</span></div>`).join('');
 
   // Daily
   destroyChart('daily');
@@ -1781,35 +2007,35 @@ function buildOverview(){
     data:{
       labels:s.daily.map(d=>d.date.slice(5)),
       datasets:[
-        {label:'Présents',data:s.daily.map(d=>d.presents),backgroundColor:'#1d4ed8',borderRadius:3},
-        {label:'Absences',data:s.daily.map(d=>d.absences),backgroundColor:'#ec4899',borderRadius:3},
-        {label:'Retards', data:s.daily.map(d=>d.retards), backgroundColor:'#f97316',borderRadius:3},
+        {label:'Présents',data:s.daily.map(d=>d.presents),backgroundColor:'#3b82f6',borderRadius:4,borderSkipped:false},
+        {label:'Absences',data:s.daily.map(d=>d.absences),backgroundColor:'#e11d48',borderRadius:4,borderSkipped:false},
+        {label:'Retards', data:s.daily.map(d=>d.retards), backgroundColor:'#f59e0b',borderRadius:4,borderSkipped:false},
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:11}}}},
-      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:10},color:'#64748b'}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9},color:'#475569'}},y:{stacked:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#475569'}}}}
   });
 
   // Dept cards
   const dColors={AOE:'#1d4ed8',GES:'#15803d',GA:'#b45309'};
-  document.getElementById('deptGrid').innerHTML=s.deptList.map(d=>{
+  const ovDept=document.getElementById('ovDeptGrid');
+  if(ovDept) ovDept.innerHTML=s.deptList.map(d=>{
     const col=dColors[d.dept]||'#64748b';
-    return`<div class="dept-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:${col}">${d.dept}</span>
-        <span style="font-size:11px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:20px">${d.effectif} employés</span>
+    const taux=Math.min(d.taux,100);
+    return`<div class="ov-dept">
+      <div class="ov-dept-name" style="color:${col}">${d.dept}</div>
+      <div class="ov-dept-sub">${d.effectif} employé${d.effectif>1?'s':''}</div>
+      <div class="ov-dept-stats">
+        <div class="ov-ds"><div class="ov-ds-val" style="color:${col}">${d.presents}</div><div class="ov-ds-lbl">Présences</div></div>
+        <div class="ov-ds"><div class="ov-ds-val" style="color:#10b981">${d.taux}%</div><div class="ov-ds-lbl">Taux</div></div>
+        <div class="ov-ds"><div class="ov-ds-val" style="color:#f59e0b">${d.retards}</div><div class="ov-ds-lbl">Retards</div></div>
       </div>
-      <div class="dept-stats-grid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="ds"><div class="ds-val" style="color:${col}">${d.presents}</div><div class="ds-lbl">Présences</div></div>
-        <div class="ds"><div class="ds-val" style="color:var(--green)">${d.taux}%</div><div class="ds-lbl">Taux prés.</div></div>
-        <div class="ds"><div class="ds-val" style="color:var(--orange)">${d.retards}</div><div class="ds-lbl">Retards</div></div>
+      <div class="ov-pbar"><div class="ov-pfill" style="width:${taux}%;background:${col}"></div></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px">
+        <div class="ov-ds" style="background:#2d0a18"><div class="ov-ds-val" style="color:#e11d48;font-size:18px">${d.absences}</div><div class="ov-ds-lbl">Anomalies</div></div>
+        <div class="ov-ds" style="background:#1a0a2e"><div class="ov-ds-val" style="color:#a78bfa;font-size:18px">${d.absDepart}</div><div class="ov-ds-lbl">Dép. manq.</div></div>
+        <div class="ov-ds" style="background:#1c1205"><div class="ov-ds-val" style="color:#fbbf24;font-size:18px">${d.absArrivee}</div><div class="ov-ds-lbl">Arr. manq.</div></div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px">
-        <div class="ds" style="background:#fff1f2"><div class="ds-val" style="color:#9d174d;font-size:16px">${d.absences}</div><div class="ds-lbl">Anomalies pointages</div></div>
-        <div class="ds" style="background:#f5f3ff"><div class="ds-val" style="color:#7c3aed;font-size:16px">${d.absDepart}</div><div class="ds-lbl">Dép. manquant</div></div>
-        <div class="ds" style="background:#fffbeb"><div class="ds-val" style="color:#b45309;font-size:16px">${d.absArrivee}</div><div class="ds-lbl">Arr. manquante</div></div>
-      </div>
-      <div class="pbar"><div class="pfill" style="width:${d.taux}%;background:${col}"></div></div>
     </div>`;
   }).join('');
 }
@@ -3054,43 +3280,28 @@ document.addEventListener('DOMContentLoaded', ()=>{
 // DÉMARRAGE — restaurer les données au chargement
 // ══════════════════════════════════════════════════════════════
 window.addEventListener('load', function(){
-  try {
-    checkStorageVersion();
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw){
-      console.log('[Storage] Aucune donnée sauvegardée');
-      return;
-    }
-    const data = JSON.parse(raw);
-    if(!data || !data.rows || !data.rows.length){
-      console.log('[Storage] Données vides ou invalides');
-      return;
-    }
-    // Restaurer
-    DB.rows     = data.rows     || [];
-    DB.employes = data.employes || {};
-    DB.fichiers = data.fichiers || [];
-    DB.terrain  = data.terrain  || [];
-    DB.conges   = data.conges   || [];
-    if(data.cfg){
-      CFG.globalTolerance  = data.cfg.globalTolerance  || 0;
-      CFG.tolerances       = data.cfg.tolerances       || {};
-      CFG.schedules        = data.cfg.schedules        || {};
-      CFG.customHolidays   = data.cfg.customHolidays   || [];
-      CFG.periodesHoraires = data.cfg.periodesHoraires || [];
-      // Ajouter les fériés custom dans activeHolidays
-      CFG.customHolidays.forEach(h=>{ if(h.date) CFG.activeHolidays.add(h.date); });
-    }
-    console.log('[Storage] Restauré:', DB.rows.length, 'pointages,', DB.conges.length, 'congés');
-    // Reconstruire l'UI
-    refreshAll();
-    // Masquer le message "aucun fichier"
-    const empty = document.getElementById('importEmpty');
-    if(empty) empty.style.display = 'none';
-    // Notification
-    showNotif('✅ ' + DB.rows.length + ' pointages restaurés · ' + DB.conges.length + ' congé(s)');
-  } catch(e){
-    console.error('[Storage] Erreur restauration:', e);
+  // 1. Initialiser les utilisateurs par défaut si besoin
+  initDefaultUsers();
+
+  // 2. Vérifier la session
+  if(restoreSession()){
+    hideLoginScreen();
+    try{
+      checkStorageVersion();
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const data = JSON.parse(raw);
+        if(data && data.rows && data.rows.length){
+          loadFromStorage();
+          refreshAll();
+          const empty = document.getElementById('importEmpty');
+          if(empty) empty.style.display='none';
+          showNotif('✅ '+DB.rows.length+' pointages restaurés · '+DB.conges.length+' congé(s)');
+        }
+      }
+    }catch(e){ console.error('[Storage]',e); }
+  } else {
+    showLoginScreen();
   }
 });
 
@@ -3250,6 +3461,159 @@ function renderPeriodes(){
       </div>
     </div>`;
   }).join('');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// AUTH & GESTION COMPTES
+// ══════════════════════════════════════════════════════════════
+function showLoginScreen(){
+  document.getElementById('loginScreen').style.display='flex';
+  document.querySelector('.hdr').style.display='none';
+  document.querySelector('.tabs').style.display='none';
+  document.querySelector('.content').style.display='none';
+}
+
+function hideLoginScreen(){
+  document.getElementById('loginScreen').style.display='none';
+  document.querySelector('.hdr').style.display='flex';
+  document.querySelector('.tabs').style.display='flex';
+  document.querySelector('.content').style.display='block';
+  updateAuthUI();
+}
+
+function updateAuthUI(){
+  if(!currentUser) return;
+  const r = ROLES[currentUser.role]||ROLES.viewer;
+  // Avatar
+  const av = document.getElementById('userAvatar');
+  const un = document.getElementById('userName');
+  const ur = document.getElementById('userRole');
+  const ub = document.getElementById('userBadge');
+  if(av) av.textContent = currentUser.name.slice(0,2).toUpperCase();
+  if(av) av.style.background = r.color;
+  if(un) un.textContent = currentUser.name;
+  if(ur) ur.textContent = r.lbl;
+  if(ub) ub.style.display='flex';
+  // Bouton import
+  const bi = document.getElementById('btnImport');
+  if(bi) bi.style.display = canDo('import')?'flex':'none';
+  // Onglet comptes
+  const tu = document.getElementById('tabUsers');
+  if(tu) tu.style.display = (currentUser.role==='superadmin')?'block':'none';
+  // Masquer onglets selon rôle
+  const tabAdmin = [...document.querySelectorAll('.tab')].find(t=>t.textContent.includes('Admin'));
+  if(tabAdmin) tabAdmin.style.display = canDo('admin')?'block':'none';
+}
+
+function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const err   = document.getElementById('loginError');
+  if(!email||!pass){ err.style.display='block'; err.textContent='Veuillez remplir tous les champs.'; return; }
+  if(login(email,pass)){
+    err.style.display='none';
+    hideLoginScreen();
+    // Restaurer les données si disponibles
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      try{
+        const data=JSON.parse(raw);
+        if(data&&data.rows&&data.rows.length){
+          loadFromStorage(); refreshAll();
+          showNotif('✅ '+DB.rows.length+' pointages restaurés');
+        }
+      }catch(e){}
+    }
+  } else {
+    err.style.display='block';
+    err.textContent='Email ou mot de passe incorrect, ou compte désactivé.';
+  }
+}
+
+function togglePassVis(){
+  const p = document.getElementById('loginPass');
+  p.type = p.type==='password'?'text':'password';
+}
+
+// ── Gestion des comptes ───────────────────────────────────────
+function openUsersModal(){
+  if(currentUser?.role!=='superadmin'){ alert('Accès réservé au Super Admin.'); return; }
+  renderUsersList();
+  document.getElementById('modalUsers').classList.add('open');
+}
+
+function renderUsersList(){
+  const users = getUsers();
+  const el = document.getElementById('usersList');
+  if(!el) return;
+  const ROLE_COLORS = {superadmin:'#7c3aed',admin:'#1d4ed8',rh:'#15803d',viewer:'#64748b'};
+  el.innerHTML = users.map(u=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:34px;height:34px;border-radius:50%;background:${ROLE_COLORS[u.role]||'#64748b'};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">
+        ${u.name.slice(0,2).toUpperCase()}
+      </div>
+      <div style="flex:1">
+        <div style="font-weight:500;font-size:13px">${u.name} ${u.id===currentUser?.id?'<span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:4px">Vous</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted)">${u.email}</div>
+      </div>
+      <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:${ROLE_COLORS[u.role]+'22'};color:${ROLE_COLORS[u.role]};font-weight:600">
+        ${ROLES[u.role]?.lbl||u.role}
+      </span>
+      <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${u.active===false?'#fee2e2':'#dcfce7'};color:${u.active===false?'#b91c1c':'#15803d'}">
+        ${u.active===false?'Désactivé':'Actif'}
+      </span>
+      ${u.id!==currentUser?.id?`
+      <div style="display:flex;gap:5px">
+        <button onclick="toggleUserActive('${u.id}')" style="padding:4px 10px;border-radius:6px;font-size:11px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-family:'DM Sans',sans-serif">
+          ${u.active===false?'Activer':'Désactiver'}
+        </button>
+        <button onclick="deleteUser('${u.id}')" style="padding:4px 10px;border-radius:6px;font-size:11px;border:1px solid #fca5a5;color:var(--red);background:var(--red-lt);cursor:pointer;font-family:'DM Sans',sans-serif">
+          Supprimer
+        </button>
+      </div>`:''}
+    </div>`).join('');
+}
+
+function createUser(){
+  const name  = document.getElementById('newUserName').value.trim();
+  const email = document.getElementById('newUserEmail').value.trim();
+  const pass  = document.getElementById('newUserPass').value;
+  const role  = document.getElementById('newUserRole').value;
+  if(!name||!email||!pass){ alert('Remplissez tous les champs.'); return; }
+  if(pass.length<6){ alert('Mot de passe minimum 6 caractères.'); return; }
+  const users = getUsers();
+  if(users.find(u=>u.email===email)){ alert('Cet email est déjà utilisé.'); return; }
+  users.push({
+    id:'u_'+Date.now(),
+    name, email,
+    password: simpleHash(pass),
+    role, active:true,
+    createdAt: new Date().toISOString()
+  });
+  saveUsers(users);
+  document.getElementById('newUserName').value='';
+  document.getElementById('newUserEmail').value='';
+  document.getElementById('newUserPass').value='';
+  renderUsersList();
+  showSaveConfirm('Compte créé ✓');
+}
+
+function deleteUser(id){
+  if(!confirm('Supprimer définitivement ce compte ?')) return;
+  const users = getUsers().filter(u=>u.id!==id);
+  saveUsers(users);
+  renderUsersList();
+  showSaveConfirm('Compte supprimé ✓');
+}
+
+function toggleUserActive(id){
+  const users = getUsers();
+  const u = users.find(u=>u.id===id);
+  if(u) u.active = u.active===false ? true : false;
+  saveUsers(users);
+  renderUsersList();
+  showSaveConfirm((u?.active?'Compte activé':'Compte désactivé')+' ✓');
 }
 
 // ══════════════════════════════════════════════════════════════
