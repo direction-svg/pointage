@@ -4129,7 +4129,7 @@ async function handlePdfImport(event){
 }
 
 async function parsePdfIvms(arrayBuffer, filename){
-  // Charger PDF.js depuis CDN
+  // Charger PDF.js
   if(!window.pdfjsLib){
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
     window.pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -4137,85 +4137,131 @@ async function parsePdfIvms(arrayBuffer, filename){
   }
 
   const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-  const rows = [];
+  const allRows = [];
 
-  // Colonnes fixes dans le PDF iVMS journalier
-  // No | ID | Name | Dept | Pos | Gender | Date | Week | Timetable
-  // CheckIn | CheckOut | Work | OT | Attended | Late | Early | Absent | Leave | Status | Records
-  const COL = {id:1,name:2,dept:3,date:6,checkin:9,checkout:10,work:11,late:14,early:15,status:18};
+  // Indices des colonnes (stables sur toutes les pages du rapport iVMS journalier)
+  // No=0, ID=1, Name=2, Dept=3, Pos=4, Gender=5, Date=6, Week=7, Timetable=8,
+  // CheckIn=9, CheckOut=10, Work=11, OT=12, Attended=13, Late=14, Early=15,
+  // Absent=16, Leave=17, Status=18, Records=19
+  const COL = {no:0,id:1,date:6,ci:9,co:10,work:11,late:14,early:15,status:18};
+
+  function cleanStr(s){ return (s||'').replace(/\n/g,' ').replace(/\s+/g,' ').trim(); }
+  function normalizeId(s){ const d=(s||'').replace(/\D/g,''); return d?d.padStart(8,'0'):''; }
+  function parseDate(s){
+    const m=cleanStr(s).match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    return m?m[3]+'-'+m[2]+'-'+m[1]:'';
+  }
+  function parseTime(s){
+    const t=cleanStr(s);
+    if(t==='-'||!t) return '';
+    const m=t.match(/\d{2}:\d{2}:\d{2}/);
+    return m?m[0]:'';
+  }
+  function parseStatus(raw){
+    const s=(raw||'').replace(/\s/g,'');
+    if(s==='W') return 'Normal';
+    if(s==='L-W'||s==='L') return 'Late';
+    if(s==='E-W'||s==='E') return 'Early';
+    return 'Absence';
+  }
+  function parseNum(s){ return parseInt((s||'').replace(/\D/g,'')||'0')||0; }
 
   for(let p=1; p<=pdf.numPages; p++){
     const page = await pdf.getPage(p);
-    const content = await page.getTextContent();
+    const tc = await page.getTextContent();
 
-    // Grouper les items texte par position Y (ligne)
-    const byY = {};
-    content.items.forEach(item=>{
-      const y = Math.round(item.transform[5] / 3) * 3;
-      if(!byY[y]) byY[y] = [];
-      byY[y].push({x: item.transform[4], text: item.str});
+    // ── Reconstituer le tableau par position Y et X ──────────────
+    // Chaque cellule PDF = groupe de mots à la même position Y, même colonne X
+    // On regroupe d'abord par Y (arrondi à 4px), puis on trie par X
+
+    const byY = new Map();
+    tc.items.forEach(item=>{
+      if(!item.str.trim()) return;
+      // PDF.js : transform[4]=x, transform[5]=y (y est inversé : grand = haut)
+      const y = Math.round(item.transform[5] / 4) * 4;
+      if(!byY.has(y)) byY.set(y, []);
+      byY.get(y).push({x: item.transform[4], text: item.str.trim()});
     });
 
-    // Trier par Y décroissant (haut → bas), puis X croissant
-    const sortedYs = Object.keys(byY).map(Number).sort((a,b)=>b-a);
+    // Trier les Ys du haut vers le bas (Y décroissant en PDF)
+    const sortedYs = [...byY.keys()].sort((a,b)=>b-a);
 
-    // Pour chaque ligne, reconstituer le texte par position X
-    for(const y of sortedYs){
-      const items = byY[y].sort((a,b)=>a.x-b.x);
-      const lineText = items.map(i=>i.text).join(' ').trim();
+    // Pour chaque Y, reconstituer la "ligne" comme une suite de cellules
+    // On identifie les colonnes par leur position X relative
+    // Les 20 colonnes du tableau ont des positions X stables :
+    // Col0(No)≈28, Col1(ID)≈55, Col2(Name)≈90, Col3(Dept)≈140, ...
+    // Col6(Date)≈340, Col9(CI)≈580, Col10(CO)≈640, Col11(Work)≈700
+    // Col14(Late)≈790, Col15(Early)≈835, Col18(Status)≈960
 
-      // Détecter les lignes de données : commence par un numéro
-      const noMatch = lineText.match(/^(\d{1,3})\s/);
-      if(!noMatch) continue;
+    // Plutôt que des positions fixes, on détecte les lignes de données
+    // et on extrait par regex directement sur le texte reconstitué
 
-      // Extraire les données par regex depuis la ligne complète
-      // Date format : DD/MM/YYYY
-      const dateMatch = lineText.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-      if(!dateMatch) continue;
-      const date = dateMatch[3]+'-'+dateMatch[2]+'-'+dateMatch[1];
+    // Lignes "contexte" pour l'ID (qui peut être sur la ligne au-dessus)
+    let prevRowText = '';
 
-      // Times HH:MM:SS
-      const times = lineText.match(/\d{2}:\d{2}:\d{2}/g) || [];
-      const checkin  = times[0] || '';
-      const checkout = times[1] || '';
+    for(let i=0; i<sortedYs.length; i++){
+      const y = sortedYs[i];
+      const items = byY.get(y).sort((a,b)=>a.x-b.x);
+      const lineText = items.map(i=>i.text).join(' ');
 
-      // Status (A, W, L-W, L, E, E-W)
-      const statusMatch = lineText.match(/\s(A|L-W|L|E-W|E|W)\s/);
-      const rawStatus = statusMatch ? statusMatch[1] : 'A';
-      let status = 'Absence';
-      if(rawStatus==='W')               status='Normal';
-      else if(rawStatus==='L-W'||rawStatus==='L') status='Late';
-      else if(rawStatus==='E-W'||rawStatus==='E') status='Early';
+      // ── Ligne de données = contient DD/MM/YYYY ET commence par un chiffre ──
+      const dateM = lineText.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if(!dateM) { prevRowText = lineText; continue; }
+      if(!/^\d{1,3}\s/.test(lineText)) { prevRowText = lineText; continue; }
 
-      // ID : extraire les chiffres consécutifs après le numéro de ligne
-      const idMatch = lineText.match(/^\d+\s+([\d\s]+?)\s+[A-Z]/);
-      if(!idMatch) continue;
-      const empId = idMatch[1].replace(/\s/g,'').padStart(8,'0');
-      if(!empId || empId==='00000000') continue;
+      const date = dateM[3]+'-'+dateM[2]+'-'+dateM[1];
 
-      // Chiffres numériques (worked, late, early)
-      const nums = lineText.match(/\d+/g) || [];
-      const worked   = parseInt(nums[nums.length-9]||0) || 0;
-      const lateMin  = parseInt(nums[nums.length-7]||0) || 0;
-      const earlyMin = parseInt(nums[nums.length-6]||0) || 0;
+      // ── Extraire l'ID ──────────────────────────────────────────
+      // L'ID est soit sur cette ligne (page 1) soit sur la ligne précédente
+      let empId = '';
+      // Essai 1 : sur la même ligne, après le numéro de ligne
+      const idSameLine = lineText.match(/^\d{1,3}\s+(\d[\d\s]{3,12})\s+(?:-|Male|Female)/);
+      if(idSameLine) empId = normalizeId(idSameLine[1]);
+      // Essai 2 : début de la ligne précédente
+      if(!empId || empId==='00000000'){
+        const idPrevLine = prevRowText.match(/^(\d[\d\s]{3,12})(?:\s+|$)/);
+        if(idPrevLine) empId = normalizeId(idPrevLine[1]);
+      }
+      if(!empId || empId==='00000000') { prevRowText=lineText; continue; }
 
-      // Département
-      const deptMatch = lineText.match(/GLOBOCORPS\/(\w+)/i);
-      const dept = deptMatch ? deptMatch[1].replace(/\s/g,'') : '';
+      // ── Extraire check-in / check-out ──────────────────────────
+      const times = lineText.match(/\d{2}:\d{2}:\d{2}/g)||[];
+      const checkin  = times[0]||'';
+      const checkout = times[1]||'';
 
-      rows.push({
-        id: empId, date, dept,
-        name: '', // on n'écrase pas le nom existant en base
+      // ── Extraire les chiffres pour work/late/early ──────────────
+      // La structure est : ...date Thu. [ci] [co] work OT attended late early absent leave status [records]
+      // On prend les nombres après la date
+      const afterDate = lineText.slice(lineText.indexOf(dateM[0])+10);
+      const nums = (afterDate.match(/\b\d+\b/g)||[]).map(Number);
+      // Structure : skip "Thu." → [ci?] [co?] work OT attended late early absent leave
+      // Positions relatives dans nums (sans les temps HH:MM:SS qui ne matchent pas \b\d+\b seul)
+      // Typiquement : nums = [work, 0, attended, late, early, absent, 0]
+      const work  = nums[0]||0;
+      const late  = nums[3]||0;
+      const early = nums[4]||0;
+
+      // ── Status ────────────────────────────────────────────────
+      const stM = afterDate.match(/\b(L-W|L|E-W|E|W|A)\b/);
+      const status = parseStatus(stM?stM[1]:'A');
+
+      allRows.push({
+        id: empId, date,
         checkin, checkout, status,
-        late: lateMin, early: earlyMin, worked,
+        late, early, worked: work,
+        name: '', dept: ''
       });
+
+      prevRowText = lineText;
     }
   }
 
-  // Dédupliquer (garder dernière occurrence par id+date)
+  // Dédupliquer LAST-WINS
   const seen = new Map();
-  rows.forEach(r=>{ if(r.id&&r.date) seen.set(r.id+'|'+r.date, r); });
-  return [...seen.values()];
+  allRows.forEach(r=>{ if(r.id&&r.date) seen.set(r.id+'|'+r.date, r); });
+  const result = [...seen.values()];
+  console.log('[PDF Parser] Résultat:', result.length, 'lignes');
+  return result;
 }
 
 function loadScript(src){
