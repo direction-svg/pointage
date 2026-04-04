@@ -1633,7 +1633,8 @@ async function sbReq(method, table, body=null, params=''){
       'apikey':        SB_KEY,
       'Authorization': 'Bearer '+SB_KEY,
       'Content-Type':  'application/json',
-      'Prefer':        method==='POST'?'resolution=merge-duplicates,return=minimal':'return=minimal'
+      'Prefer':        method==='POST'?'resolution=merge-duplicates,return=minimal'
+                      :method==='GET'?'count=none':'return=minimal'
     }
   };
   if(body) opts.body = JSON.stringify(body);
@@ -1650,8 +1651,24 @@ async function sbReq(method, table, body=null, params=''){
 async function loadFromSupabase(){
   showLoadingBanner('Chargement des données...');
   try{
+    // Charger les pointages avec pagination (Supabase limite à 1000 par défaut)
+    async function loadAllPointages(){
+      const pageSize = 1000;
+      let allRows = [];
+      let offset = 0;
+      while(true){
+        const batch = await sbReq('GET','pointages','',
+          `?select=*&order=date.asc&limit=${pageSize}&offset=${offset}`);
+        if(!batch || !batch.length) break;
+        allRows = allRows.concat(batch);
+        if(batch.length < pageSize) break; // dernière page
+        offset += pageSize;
+      }
+      return allRows;
+    }
+
     const [pointages, employes, congesData, terrainData, fichiersData, configData, usersData] = await Promise.all([
-      sbReq('GET','pointages','','?select=*&order=date.asc&limit=50000'),
+      loadAllPointages(),
       sbReq('GET','employes','','?select=*'),
       sbReq('GET','conges','','?select=*'),
       sbReq('GET','terrain','','?select=*'),
@@ -1708,13 +1725,10 @@ async function loadFromSupabase(){
     if(usersData && usersData.length) saveUsersLocal(usersData);
 
     hideLoadingBanner();
-    console.log('[Supabase] Chargé:', DB.rows.length, 'pointages,', DB.conges.length, 'congés');
-    // Debug : afficher les mois disponibles
     const months = [...new Set(DB.rows.map(r=>r.date.slice(0,7)))].sort();
-    console.log('[Supabase] Mois disponibles:', months);
     const lastDate = DB.rows.length ? DB.rows.map(r=>r.date).sort().slice(-1)[0] : 'aucune';
     const firstDate = DB.rows.length ? DB.rows.map(r=>r.date).sort()[0] : 'aucune';
-    console.log('[Supabase] Plage:', firstDate, '→', lastDate);
+    console.log('[Supabase] Chargé:', DB.rows.length, 'pointages | Mois:', months.join(', '), '| Plage:', firstDate, '→', lastDate);
     return true;
   }catch(e){
     hideLoadingBanner();
