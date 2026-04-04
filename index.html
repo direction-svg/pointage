@@ -1459,6 +1459,55 @@ body { font-family: 'Inter', sans-serif !important; }
 </div>
 
 
+
+<!-- MODAL ÉDITION UTILISATEUR -->
+<div class="modal-bg" id="modalEditUser">
+  <div class="modal" style="width:440px">
+    <h2 style="margin-bottom:18px">✏️ Modifier le compte</h2>
+    <input type="hidden" id="editUserId">
+
+    <div class="form-row" style="margin-bottom:12px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px">Nom complet</label>
+      <input id="editUserName" type="text" placeholder="Nom complet"
+        style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none">
+    </div>
+
+    <div class="form-row" style="margin-bottom:12px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px">Email (login)</label>
+      <input id="editUserEmail" type="email" placeholder="email@company.com"
+        style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none">
+    </div>
+
+    <div class="form-row" style="margin-bottom:12px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px">
+        Nouveau mot de passe
+        <span style="font-weight:400;color:#94a3b8">(laisser vide = inchangé)</span>
+      </label>
+      <div style="position:relative">
+        <input id="editUserPass" type="password" placeholder="Laisser vide pour ne pas changer"
+          style="width:100%;padding:9px 36px 9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none">
+        <button onclick="toggleEditPassVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px">👁</button>
+      </div>
+    </div>
+
+    <div class="form-row" style="margin-bottom:20px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px">Rôle</label>
+      <select id="editUserRole"
+        style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'Inter',sans-serif;outline:none;background:var(--white)">
+        <option value="viewer">👁 Lecteur — consultation uniquement</option>
+        <option value="rh">📋 RH — import + congés + terrain</option>
+        <option value="admin">⚙️ Administrateur — gestion complète</option>
+        <option value="superadmin">🔑 Super Admin — comptes utilisateurs</option>
+      </select>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal('modalEditUser')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveEditUser()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL LISTE ABSENCES COMPLETES -->
 <div class="modal-bg" id="modalAbsList">
   <div class="modal" style="width:680px;max-height:80vh;display:flex;flex-direction:column">
@@ -4456,15 +4505,18 @@ function renderUsersList(){
       <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${u.active===false?'#fee2e2':'#dcfce7'};color:${u.active===false?'#b91c1c':'#15803d'}">
         ${u.active===false?'Désactivé':'Actif'}
       </span>
-      ${u.id!==currentUser?.id?`
       <div style="display:flex;gap:5px">
-        <button onclick="toggleUserActive('${u.id}')" style="padding:4px 10px;border-radius:6px;font-size:11px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-family:'DM Sans',sans-serif">
+        <button onclick="openEditUser('${u.id}')" style="padding:4px 10px;border-radius:6px;font-size:11px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-family:'Inter',sans-serif">
+          ✏️ Modifier
+        </button>
+        ${u.id!==currentUser?.id?`
+        <button onclick="toggleUserActive('${u.id}')" style="padding:4px 10px;border-radius:6px;font-size:11px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-family:'Inter',sans-serif">
           ${u.active===false?'Activer':'Désactiver'}
         </button>
-        <button onclick="deleteUser('${u.id}')" style="padding:4px 10px;border-radius:6px;font-size:11px;border:1px solid #fca5a5;color:var(--red);background:var(--red-lt);cursor:pointer;font-family:'DM Sans',sans-serif">
+        <button onclick="deleteUser('${u.id}')" style="padding:4px 10px;border-radius:6px;font-size:11px;border:1px solid #fca5a5;color:var(--red);background:var(--red-lt);cursor:pointer;font-family:'Inter',sans-serif">
           Supprimer
-        </button>
-      </div>`:''}
+        </button>`:''}
+      </div>
     </div>`).join('');
 }
 
@@ -4494,6 +4546,79 @@ function createUser(){
   document.getElementById('newUserPass').value='';
   renderUsersList();
   showSaveConfirm('Compte créé ✓');
+}
+
+
+// ── Édition utilisateur ────────────────────────────────────────
+function openEditUser(id){
+  const users = getUsers();
+  const u = users.find(u=>u.id===id);
+  if(!u){ alert('Utilisateur introuvable.'); return; }
+
+  document.getElementById('editUserId').value   = u.id;
+  document.getElementById('editUserName').value  = u.name;
+  document.getElementById('editUserEmail').value = u.email;
+  document.getElementById('editUserPass').value  = '';
+  document.getElementById('editUserRole').value  = u.role||'viewer';
+
+  document.getElementById('modalEditUser').classList.add('open');
+}
+
+function toggleEditPassVis(){
+  const inp = document.getElementById('editUserPass');
+  inp.type = inp.type==='password' ? 'text' : 'password';
+}
+
+async function saveEditUser(){
+  const id    = document.getElementById('editUserId').value;
+  const name  = document.getElementById('editUserName').value.trim();
+  const email = document.getElementById('editUserEmail').value.trim().toLowerCase();
+  const pass  = document.getElementById('editUserPass').value;
+  const role  = document.getElementById('editUserRole').value;
+
+  if(!name){ alert('Le nom est obligatoire.'); return; }
+  if(!email){ alert('L\'email est obligatoire.'); return; }
+  if(pass && pass.length<6){ alert('Mot de passe minimum 6 caractères.'); return; }
+
+  const users = getUsers();
+  const idx = users.findIndex(u=>u.id===id);
+  if(idx<0){ alert('Utilisateur introuvable.'); return; }
+
+  // Vérifier email unique (sauf pour lui-même)
+  const emailExists = users.find(u=>u.email===email && u.id!==id);
+  if(emailExists){ alert('Cet email est déjà utilisé par un autre compte.'); return; }
+
+  // Mettre à jour
+  users[idx].name  = name;
+  users[idx].email = email;
+  users[idx].role  = role;
+  if(pass) users[idx].password = simpleHash(pass);
+
+  saveUsers(users);
+
+  // Sync Supabase
+  try{
+    await updateUserInSB(users[idx]);
+  }catch(e){
+    console.warn('[SB editUser]', e.message);
+  }
+
+  closeModal('modalEditUser');
+  renderUsersList();
+  showSaveConfirm('Compte modifié ✓');
+
+  // Si c'est l'utilisateur courant, mettre à jour la session
+  if(currentUser && currentUser.id===id){
+    currentUser.name  = name;
+    currentUser.email = email;
+    currentUser.role  = role;
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+    // Rafraîchir l'affichage du header
+    const badge = document.getElementById('userBadge');
+    if(badge) badge.textContent = name.slice(0,2).toUpperCase();
+    const userNameEl = document.getElementById('currentUserName');
+    if(userNameEl) userNameEl.textContent = name;
+  }
 }
 
 function deleteUser(id){
