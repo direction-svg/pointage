@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Pointage Hikvision — v4 (02/04/2026 22:51)</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -434,6 +434,292 @@ body.has-fullscreen .tabs { display:none }
 .ds-lbl{font-size:10px;color:var(--muted);margin-top:1px}
 .pbar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:10px}
 .pfill{height:100%;border-radius:3px}
+
+/* ══════════════════════════════════════════════════════════════
+   WHOOP DARK DESIGN — Vue d'ensemble
+   ══════════════════════════════════════════════════════════════ */
+
+/* Police globale → Inter */
+body { font-family: 'Inter', sans-serif !important; }
+.hdr, .tabs, .tab, table, td, th, input, select, button, .btn, .fsel {
+  font-family: 'Inter', sans-serif !important;
+}
+.hbrand h1 { font-family: 'Space Grotesk', sans-serif !important; }
+
+/* Page overview full dark */
+#page-overview {
+  background: #050508;
+  min-height: calc(100vh - 108px);
+  padding: 20px;
+  margin: -1.5rem;
+}
+#page-overview .period-bar {
+  background: transparent;
+  border: none;
+  padding: 0 0 18px;
+}
+#page-overview .period-lbl { color: #475569; font-size: 11px; }
+#page-overview .pbtn-period {
+  background: #0f0f18;
+  border-color: #1e2030;
+  color: #64748b;
+  font-family: 'Inter', sans-serif;
+}
+#page-overview .pbtn-period.active,
+#page-overview .pbtn-period:hover {
+  background: #1a1a2e;
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
+/* KPI grid */
+.ov-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+@media(max-width:1100px){.ov-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.ov-grid{grid-template-columns:1fr 1fr}}
+
+.ov-kpi {
+  background: #0d0d1a;
+  border: 1px solid #1a1a2e;
+  border-radius: 14px;
+  padding: 18px 20px;
+  position: relative;
+  transition: border-color .2s, transform .15s;
+}
+.ov-kpi:hover { border-color: #2a2a45; transform: translateY(-1px); }
+
+/* Charts row */
+.ov-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+@media(max-width:900px){.ov-row{grid-template-columns:1fr}}
+.ov-card {
+  background: #0d0d1a;
+  border: 1px solid #1a1a2e;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.ov-card-hdr {
+  padding: 16px 20px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ov-card-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.ov-legend { padding: 0 20px 8px; display: flex; flex-direction: column; gap: 5px; }
+.ov-li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+
+/* Groupe global */
+.ov-groupe {
+  background: linear-gradient(135deg, #0d0d1a 0%, #0f111f 100%);
+  border: 1px solid #2a2a45;
+  border-radius: 16px;
+  padding: 22px;
+  margin-bottom: 14px;
+}
+.ov-groupe-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  margin-bottom: 18px;
+}
+.ov-groupe-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+@media(max-width:900px){.ov-groupe-grid{grid-template-columns:repeat(2,1fr)}}
+
+.ov-grp-stat { }
+.ov-grp-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.ov-grp-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 3px;
+}
+.ov-grp-sub { font-size: 11px; color: #475569; }
+
+/* Dept cards grid */
+.ov-dept-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+@media(max-width:900px){.ov-dept-row{grid-template-columns:1fr}}
+
+.ov-dept-card {
+  background: #0d0d1a;
+  border: 1px solid #1a1a2e;
+  border-radius: 16px;
+  padding: 20px;
+  transition: border-color .2s;
+}
+.ov-dept-card:hover { border-color: #2a2a45; }
+
+.ov-dept-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.ov-dept-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  flex: 1;
+}
+.ov-dept-eff {
+  font-size: 11px;
+  color: #475569;
+}
+.ov-dept-taux {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+.ov-dept-sep {
+  height: 1px;
+  margin-bottom: 14px;
+}
+.ov-dept-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ov-dept-metric { }
+.ov-dept-metric-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+.ov-dept-metric-lbl {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin: 3px 0 2px;
+}
+.ov-dept-metric-sub { font-size: 10px; color: #475569; }
+
+/* Cacher l'ancienne kpi-grid sur overview */
+#page-overview .kpi-grid { display: none !important; }
+#page-overview .dept-grid { display: none !important; }
+
+
+/* Bloc absences détaillées */
+.ov-abs-detail {
+  background: #080810;
+  border: 1px solid #1a1a2e;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.ov-abs-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 12px;
+}
+.ov-abs-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ov-abs-label {
+  flex: 1;
+  font-size: 12px;
+  color: #94a3b8;
+}
+.ov-abs-count {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  min-width: 32px;
+  text-align: right;
+}
+.ov-abs-ratio {
+  font-size: 11px;
+  color: #475569;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Layout groupe top */
+.ov-groupe-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media(max-width:900px){ .ov-groupe-top { grid-template-columns: 1fr; } }
+.ov-groupe-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ov-grp-stat {
+  background: #080810;
+  border: 1px solid #1a1a2e;
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.ov-grp-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+
+.ov-abs-item { border-radius: 8px; padding: 4px 6px; margin: 0 -6px; transition: background .15s; }
+.ov-abs-clickable { cursor: pointer; }
+.ov-abs-clickable:hover { background: #1a1a2e; }
+.ov-abs-clickable:hover .ov-abs-label { color: #e2e8f0; }
+
+/* Modal absences dark */
+#modalAbsList .modal {
+  background: #0d0d1a;
+  border: 1px solid #1a1a2e;
+  color: #e2e8f0;
+}
+#modalAbsList table { background: transparent; }
+#modalAbsList th { background: #080810; }
+
 </style>
 </head>
 <body>
@@ -519,7 +805,7 @@ body.has-fullscreen .tabs { display:none }
     </div>
   </div>
   <!-- Dept row -->
-  <div class="ov-dept-row" id="ovDeptGrid"></div>
+  <div id="ovDeptGrid" style="margin-top:0"></div>
 </div>
 
 <!-- ══ EMPLOYÉS ══ -->
@@ -1172,6 +1458,18 @@ body.has-fullscreen .tabs { display:none }
   </div>
 </div>
 
+
+<!-- MODAL LISTE ABSENCES COMPLETES -->
+<div class="modal-bg" id="modalAbsList">
+  <div class="modal" style="width:680px;max-height:80vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0">
+      <h2 id="modalAbsTitle" style="font-family:'Space Grotesk',sans-serif;font-size:18px;color:#fff;margin:0">Absences complètes</h2>
+      <button class="btn btn-ghost" onclick="closeModal('modalAbsList')" style="padding:4px 12px;font-size:12px">✕ Fermer</button>
+    </div>
+    <div id="modalAbsBody" style="overflow-y:auto;flex:1"></div>
+  </div>
+</div>
+
 <!-- MODAL TERRAIN DETAIL -->
 <div class="modal-bg" id="modalTerrain">
   <div class="modal">
@@ -1411,6 +1709,12 @@ async function loadFromSupabase(){
 
     hideLoadingBanner();
     console.log('[Supabase] Chargé:', DB.rows.length, 'pointages,', DB.conges.length, 'congés');
+    // Debug : afficher les mois disponibles
+    const months = [...new Set(DB.rows.map(r=>r.date.slice(0,7)))].sort();
+    console.log('[Supabase] Mois disponibles:', months);
+    const lastDate = DB.rows.length ? DB.rows.map(r=>r.date).sort().slice(-1)[0] : 'aucune';
+    const firstDate = DB.rows.length ? DB.rows.map(r=>r.date).sort()[0] : 'aucune';
+    console.log('[Supabase] Plage:', firstDate, '→', lastDate);
     return true;
   }catch(e){
     hideLoadingBanner();
@@ -2226,15 +2530,18 @@ function computeStats(rows){
     // absDepart et absArrivee = anomalies sur jours PRÉSENTS → pas des absences
     const totalAbsences = absAucunTotal;
     const totalAnomalies = e.absDepart + e.absArrivee; // anomalies pointage (présent mais incomplet)
+    // Jours ouvrés réels pour cet employé = jours ouvrés où il a une ligne
+    const joursOuvresEmp = ouvresDates.filter(d=>e.datesCovered.has(d)).length + absNonDeclares;
     return{
       id:e.id, name:e.name, dept:e.dept,
       presents,
+      joursOuvresEmp: Math.max(joursOuvresEmp, absAucunTotal + presents), // au moins ses absences + présences
       absTotal:   totalAbsences,
       absAnomalies: totalAnomalies,
-      absAucun:   absAucunTotal,   // Aucun pointage (total + non déclarées)
-      absDepart:  e.absDepart,     // Arrivée OK, départ manquant
-      absArrivee: e.absArrivee,    // Départ OK, arrivée manquante
-      conges:e.congesMin||0, // nb jours congé dans la période analysée
+      absAucun:   absAucunTotal,
+      absDepart:  e.absDepart,
+      absArrivee: e.absArrivee,
+      conges:e.congesMin||0,
       retards:e.retards, h_retard:+(e.retardMin/60).toFixed(1),
       departs:e.departs,
       h_travail:+(e.workedMin/60).toFixed(1),
@@ -2274,15 +2581,30 @@ function computeStats(rows){
   // Dept
   const byDept={};
   empList.forEach(e=>{
-    if(!byDept[e.dept]) byDept[e.dept]={dept:e.dept,effectif:0,presents:0,absences:0,absAucun:0,absDepart:0,absArrivee:0,retards:0,h_travail:0};
-    byDept[e.dept].effectif++;
-    byDept[e.dept].presents  +=e.presents;
-    byDept[e.dept].absences  +=e.absTotal;
-    byDept[e.dept].absAucun  +=e.absAucun;
-    byDept[e.dept].absDepart +=e.absDepart;
-    byDept[e.dept].absArrivee+=e.absArrivee;
-    byDept[e.dept].retards   +=e.retards;
-    byDept[e.dept].h_travail+=e.h_travail;
+    if(!byDept[e.dept]) byDept[e.dept]={
+      dept:e.dept, effectif:0, presents:0,
+      absTotal:0, absAucun:0, absDepart:0, absArrivee:0,
+      retards:0, h_travail:0,
+      // Compteurs par personne
+      nbJamaisPointe:0,    // jamais de pointage dans la période
+      nbAbsenceComplete:0, // au moins 1 absence totale (ni CI ni CO)
+      nbAnomalies:0,       // au moins 1 anomalie (départ ou arrivée manquant)
+      nbRetards:0,         // au moins 1 retard
+    };
+    const d=byDept[e.dept];
+    d.effectif++;
+    d.presents   +=e.presents;
+    d.absTotal   +=e.absTotal;
+    d.absAucun   +=e.absAucun;
+    d.absDepart  +=e.absDepart;
+    d.absArrivee +=e.absArrivee;
+    d.retards    +=e.retards;
+    d.h_travail  +=e.h_travail;
+    // Par personne
+    if(e.presents===0)             d.nbJamaisPointe++;
+    if(e.absAucun>0)               d.nbAbsenceComplete++;
+    if(e.absDepart+e.absArrivee>0) d.nbAnomalies++;
+    if(e.retards>0)                d.nbRetards++;
   });
   Object.values(byDept).forEach(d=>{
     const att=d.effectif*joursOuvres;
@@ -2290,17 +2612,45 @@ function computeStats(rows){
     d.h_travail=+d.h_travail.toFixed(0);
   });
 
+  const totalEmp = empList.length;
+
+  // Tranches d'absences complètes par personne (jours sans aucun pointage)
+  // absAucun = nb de jours sans aucun pointage pour cet employé
+  const absSlices = {
+    jamais:   empList.filter(e=>e.absAucun===0 && e.presents===0).length, // 0 présence ET 0 absence déclarée
+    zero:     empList.filter(e=>e.presents===0).length,                    // jamais pointé du tout
+    s1_5:     empList.filter(e=>e.absAucun>=1  && e.absAucun<=5).length,   // 1 à 5 absences
+    s6_10:    empList.filter(e=>e.absAucun>=6  && e.absAucun<=10).length,  // 6 à 10 absences
+    s11plus:  empList.filter(e=>e.absAucun>=11).length,                    // 11+ absences
+  };
+
+  // Même chose par département
+  Object.values(byDept).forEach(d=>{
+    const dEmps = empList.filter(e=>e.dept===d.dept);
+    d.absSlices = {
+      zero:    dEmps.filter(e=>e.presents===0).length,
+      s1_5:    dEmps.filter(e=>e.absAucun>=1  && e.absAucun<=5).length,
+      s6_10:   dEmps.filter(e=>e.absAucun>=6  && e.absAucun<=10).length,
+      s11plus: dEmps.filter(e=>e.absAucun>=11).length,
+    };
+  });
+
   return{
     joursOuvres,
-    totalPresents:  empList.reduce((s,e)=>s+e.presents,0),
-    totalAbsences:  empList.reduce((s,e)=>s+e.absTotal,0),
-    totalAbsAucun:  empList.reduce((s,e)=>s+e.absAucun,0),
-    totalAbsDepart: empList.reduce((s,e)=>s+e.absDepart,0),
-    totalAbsArrivee:empList.reduce((s,e)=>s+e.absArrivee,0),
-    totalAbsArrivee:empList.reduce((s,e)=>s+e.absArrivee,0),
-    totalRetards:rows.filter(r=>!isJourNonOuvre(r.date)&&r.status!=='No Shift Schedule'&&r.status!=='Absence'&&calcLateEffective(r.id,r.date,r.checkin)>0).length,
-    tauxMoyen:empList.length?+(empList.reduce((s,e)=>s+e.taux,0)/empList.length).toFixed(1):0,
-    totalH:+(rows.reduce((s,r)=>s+r.worked,0)/60).toFixed(0),
+    totalEmp,
+    totalPresents:   empList.reduce((s,e)=>s+e.presents,0),
+    totalAbsences:   empList.reduce((s,e)=>s+e.absTotal,0),
+    totalAbsAucun:   empList.reduce((s,e)=>s+e.absAucun,0),
+    totalAbsDepart:  empList.reduce((s,e)=>s+e.absDepart,0),
+    totalAbsArrivee: empList.reduce((s,e)=>s+e.absArrivee,0),
+    totalRetards:    rows.filter(r=>!isJourNonOuvre(r.date)&&r.status!=='No Shift Schedule'&&r.status!=='Absence'&&calcLateEffective(r.id,r.date,r.checkin)>0).length,
+    tauxMoyen:       empList.length?+(empList.reduce((s,e)=>s+e.taux,0)/empList.length).toFixed(1):0,
+    totalH:          +(rows.reduce((s,r)=>s+r.worked,0)/60).toFixed(0),
+    nbJamaisPointe:   empList.filter(e=>e.presents===0).length,
+    nbAbsenceComplete:empList.filter(e=>e.absAucun>0).length,
+    nbAnomalies:      empList.filter(e=>e.absDepart+e.absArrivee>0).length,
+    nbRetards:        empList.filter(e=>e.retards>0).length,
+    absSlices,
     stCounts,
     empList:empList.sort((a,b)=>a.name.localeCompare(b.name)),
     deptList:Object.values(byDept).sort((a,b)=>a.dept.localeCompare(b.dept)),
@@ -2316,91 +2666,190 @@ function buildOverview(){
   if(!rows.length) return;
   const s=computeStats(rows);
 
-  // ── KPIs redesign ─────────────────────────────────────────
+  const pct=(n,tot)=>tot>0?Math.round(n/tot*100):0;
+  const ratio=(n,tot)=>`${n}/${tot}`;
+  const bar=(val,color='#3b82f6')=>`<div style="height:3px;background:#1a1a2e;border-radius:2px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${Math.min(val,100)}%;background:${color};border-radius:2px;transition:width .6s ease"></div></div>`;
+
+  // ── KPIs globaux ─────────────────────────────────────────────
+  const totEmp = s.totalEmp || 1;
   const kpis=[
-    {lbl:'Présences',      val:s.totalPresents, sub:s.joursOuvres+' jours ouvrés', accent:'#3b82f6', trend:'neu'},
-    {lbl:'Taux présence',  val:s.tauxMoyen+'%', sub:'moyenne équipe',              accent:'#10b981', trend:s.tauxMoyen>=80?'up':'down'},
-    {lbl:'Abs. non justifiées',val:s.totalAbsences,sub:'aucun pointage',           accent:'#e11d48', trend:s.totalAbsences>10?'down':'neu'},
-    {lbl:'Anomalies pointage',val:s.totalAbsDepart+s.totalAbsArrivee,sub:'présent sans checkout/in', accent:'#7c3aed', trend:'neu'},
-    {lbl:'Retards',        val:s.totalRetards,  sub:'après tolérance',             accent:'#f59e0b', trend:'neu'},
-
-    {lbl:'Dép. manquant',  val:s.totalAbsDepart,sub:'arrivée OK',                  accent:'#7c3aed', trend:'neu'},
-    {lbl:'Arr. manquante', val:s.totalAbsArrivee,sub:'départ OK',                  accent:'#b45309', trend:'neu'},
-
+    {lbl:'Employés suivis',   val:s.totalEmp,       sub:'dans la période',              col:'#60a5fa', icon:'👥'},
+    {lbl:'Absences complètes',val:s.totalAbsAucun,   sub:ratio(s.nbAbsenceComplete,totEmp)+' employés touchés', col:'#f87171', icon:'✗', pct:pct(s.nbAbsenceComplete,totEmp)},
+    {lbl:'Retards',           val:s.totalRetards,    sub:ratio(s.nbRetards,totEmp)+' employés concernés', col:'#fbbf24', icon:'⏱', pct:pct(s.nbRetards,totEmp)},
+    {lbl:'Anomalies pointage',val:s.totalAbsDepart+s.totalAbsArrivee, sub:ratio(s.nbAnomalies,totEmp)+' employés concernés', col:'#a78bfa', icon:'⚠', pct:pct(s.nbAnomalies,totEmp)},
+    {lbl:'Sans pointage',     val:s.nbJamaisPointe,  sub:'zéro pointage ce mois', col:'#fb923c', icon:'◯', pct:pct(s.nbJamaisPointe,totEmp)},
+    {lbl:'Taux présence moy.',val:s.tauxMoyen+'%',   sub:'moyenne groupe',               col:'#34d399', icon:'↑'},
+    {lbl:'Jours ouvrés',      val:s.joursOuvres,     sub:'période analysée',             col:'#94a3b8', icon:'📅'},
+    {lbl:'H. travaillées',    val:s.totalH+'h',      sub:'total équipe',                col:'#22d3ee', icon:'⏰'},
   ];
-  const trendHtml={up:'<span class="ov-kpi-trend trend-up">↑</span>',down:'<span class="ov-kpi-trend trend-down">↓</span>',neu:''};
+
   const grid=document.getElementById('ovKpiGrid');
   if(grid) grid.innerHTML=kpis.map(k=>`
     <div class="ov-kpi">
-      <div class="ov-kpi-accent" style="background:${k.accent}"></div>
-      <div class="ov-kpi-lbl">${k.lbl}</div>
-      <div class="ov-kpi-val">${k.val}</div>
-      <div class="ov-kpi-sub">${k.sub} ${trendHtml[k.trend]}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:10px;font-weight:600;color:#475569;letter-spacing:.08em;text-transform:uppercase">${k.lbl}</span>
+        <span style="font-size:16px;opacity:.7">${k.icon}</span>
+      </div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;color:#fff;line-height:1">${k.val}</div>
+      <div style="font-size:11px;color:#64748b;margin-top:5px">${k.sub}</div>
+      ${k.pct!==undefined?bar(k.pct,k.col):'<div style="height:3px;background:#1a1a2e;margin-top:6px;border-radius:2px"><div style="height:100%;width:2px;background:'+k.col+'"></div></div>'}
+      <div style="width:100%;height:1px;background:linear-gradient(to right,${k.col}44,transparent);margin-top:8px"></div>
     </div>`).join('');
 
-  // Donut statuts
-  // On construit le donut avec les 3 types d'absence détaillés
-  const stColors={
-    'Normal':'#15803d','Late':'#b91c1c','Early':'#1d4ed8','Late/Early':'#b45309',
-    'abs-total':'#9d174d','abs-depart':'#7c3aed','abs-arrivee':'#b45309'
-  };
-  const stLabels={
-    'Normal':'Normal','Late':'Retard','Early':'Anticipé','Late/Early':'Ret.+Dép.',
-    'abs-total':'Abs. aucun pointage','abs-depart':'Abs. départ manquant','abs-arrivee':'Abs. arrivée manquante'
-  };
-  const stKeys=['Normal','Early','Late','Late/Early','abs-total','abs-depart','abs-arrivee'];
-  const stData=[
-    s.stCounts['Normal']||0, s.stCounts['Early']||0, s.stCounts['Late']||0, s.stCounts['Late/Early']||0,
-    s.totalAbsAucun, s.totalAbsDepart, s.totalAbsArrivee
-  ];
-  destroyChart('donut');
-  charts.donut=new Chart(document.getElementById('chartDonut'),{
-    type:'doughnut',
-    data:{labels:stKeys.map(k=>stLabels[k]),datasets:[{data:stData,backgroundColor:stKeys.map(k=>stColors[k]),borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'70%',backgroundColor:'transparent'}
-  });
-  const ovLegend=document.getElementById('ovDonutLegend');
-  if(ovLegend) ovLegend.innerHTML=stKeys.map((k,i)=>
-    `<div class="ov-li"><span class="ov-ld" style="background:${stColors[k]}"></span>${stLabels[k]} <span style='color:#94a3b8;margin-left:2px'>${stData[i]}</span></div>`).join('');
-
-  // Daily
+  // ── Graphique barres quotidiennes ─────────────────────────────
   destroyChart('daily');
-  charts.daily=new Chart(document.getElementById('chartDaily'),{
-    type:'bar',
-    data:{
-      labels:s.daily.map(d=>d.date.slice(5)),
-      datasets:[
-        {label:'Présents',data:s.daily.map(d=>d.presents),backgroundColor:'#3b82f6',borderRadius:4,borderSkipped:false},
-        {label:'Absences',data:s.daily.map(d=>d.absences),backgroundColor:'#e11d48',borderRadius:4,borderSkipped:false},
-        {label:'Retards', data:s.daily.map(d=>d.retards), backgroundColor:'#f59e0b',borderRadius:4,borderSkipped:false},
-      ]
-    },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:10},color:'#64748b'}}},
-      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9},color:'#475569'}},y:{stacked:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#475569'}}}}
-  });
+  const dailyEl=document.getElementById('chartDaily');
+  if(dailyEl && s.daily.length){
+    charts.daily=new Chart(dailyEl,{
+      type:'bar',
+      data:{
+        labels:s.daily.map(d=>d.date.slice(5)),
+        datasets:[
+          {label:'Présents', data:s.daily.map(d=>d.presents), backgroundColor:'rgba(96,165,250,.85)', borderRadius:3, borderSkipped:false},
+          {label:'Absences', data:s.daily.map(d=>d.absences), backgroundColor:'rgba(248,113,113,.85)', borderRadius:3, borderSkipped:false},
+          {label:'Retards',  data:s.daily.map(d=>d.retards),  backgroundColor:'rgba(251,191,36,.85)',  borderRadius:3, borderSkipped:false},
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{boxWidth:8,font:{size:10},color:'#64748b'}}},
+        scales:{
+          x:{stacked:true, grid:{display:false}, ticks:{font:{size:9},color:'#475569'}},
+          y:{stacked:true, grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#475569'}}
+        }
+      }
+    });
+  }
 
-  // Dept cards
-  const dColors={AOE:'#1d4ed8',GES:'#15803d',GA:'#b45309'};
-  const ovDept=document.getElementById('ovDeptGrid');
-  if(ovDept) ovDept.innerHTML=s.deptList.map(d=>{
-    const col=dColors[d.dept]||'#64748b';
-    const taux=Math.min(d.taux,100);
-    return`<div class="ov-dept">
-      <div class="ov-dept-name" style="color:${col}">${d.dept}</div>
-      <div class="ov-dept-sub">${d.effectif} employé${d.effectif>1?'s':''}</div>
-      <div class="ov-dept-stats">
-        <div class="ov-ds"><div class="ov-ds-val" style="color:${col}">${d.presents}</div><div class="ov-ds-lbl">Présences</div></div>
-        <div class="ov-ds"><div class="ov-ds-val" style="color:#10b981">${d.taux}%</div><div class="ov-ds-lbl">Taux</div></div>
-        <div class="ov-ds"><div class="ov-ds-val" style="color:#f59e0b">${d.retards}</div><div class="ov-ds-lbl">Retards</div></div>
+  // ── Sections par département ─────────────────────────────────
+  const deptEl=document.getElementById('ovDeptGrid');
+  if(!deptEl) return;
+
+  const DEPT_COLORS={AOE:'#60a5fa', GES:'#34d399', GA:'#fbbf24'};
+
+  // Fonction helper pour les barres de tranche
+  const sliceBar=(n,tot,col)=>{
+    const p=pct(n,tot);
+    return `<div style="display:flex;align-items:center;gap:8px;margin:5px 0">
+      <div style="flex:1;height:4px;background:#1a1a2e;border-radius:2px;overflow:hidden">
+        <div style="height:100%;width:${p}%;background:${col};border-radius:2px;transition:width .6s ease"></div>
       </div>
-      <div class="ov-pbar"><div class="ov-pfill" style="width:${taux}%;background:${col}"></div></div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px">
-        <div class="ov-ds" style="background:#2d0a18"><div class="ov-ds-val" style="color:#e11d48;font-size:18px">${d.absences}</div><div class="ov-ds-lbl">Anomalies</div></div>
-        <div class="ov-ds" style="background:#1a0a2e"><div class="ov-ds-val" style="color:#a78bfa;font-size:18px">${d.absDepart}</div><div class="ov-ds-lbl">Dép. manq.</div></div>
-        <div class="ov-ds" style="background:#1c1205"><div class="ov-ds-val" style="color:#fbbf24;font-size:18px">${d.absArrivee}</div><div class="ov-ds-lbl">Arr. manq.</div></div>
+      <span style="font-size:10px;color:#64748b;min-width:28px;text-align:right">${p}%</span>
+    </div>`;
+  };
+
+  const absBlock=(slices,eff,dept='all')=>{
+    const rows=[
+      {lbl:'Jamais pointé ce mois', val:slices.zero,   col:'#fb923c', tr:'zero'},
+      {lbl:'1 à 5 absences',        val:slices.s1_5,   col:'#fbbf24', tr:'s1_5'},
+      {lbl:'6 à 10 absences',       val:slices.s6_10,  col:'#f87171', tr:'s6_10'},
+      {lbl:'11 absences et plus',   val:slices.s11plus, col:'#ef4444', tr:'s11plus'},
+    ];
+    return `<div class="ov-abs-detail">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="ov-abs-title" style="margin-bottom:0">Absences complètes</div>
+        ${slices.zero+slices.s1_5+slices.s6_10+slices.s11plus>0?`<button onclick="showAbsList('${dept}','all')" style="font-size:10px;color:#60a5fa;background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;padding:0">Voir tous ›</button>`:''}
+      </div>
+      ${rows.map(r=>`
+      <div class="ov-abs-item ${r.val>0?'ov-abs-clickable':''}" 
+           ${r.val>0?`onclick="showAbsList('${dept}','${r.tr}')" title="Cliquer pour voir la liste"`:''}
+           style="margin-bottom:6px">
+        <div class="ov-abs-row">
+          <div class="ov-abs-label">${r.lbl}</div>
+          <div class="ov-abs-count" style="color:${r.col}">${r.val}</div>
+          <div class="ov-abs-ratio">${ratio(r.val,eff)}</div>
+        </div>
+        ${sliceBar(r.val,eff,r.col)}
+      </div>`).join('')}
+    </div>`;
+  };
+
+  // Bloc global GROUPE
+  const grpHtml=`
+    <div class="ov-groupe">
+      <div class="ov-groupe-title">🌍 GLOBOCORPS — Cumul Groupe</div>
+      <div class="ov-groupe-top">
+        <div class="ov-groupe-grid">
+          ${[
+            {lbl:'Retards',            val:s.totalRetards,
+             sub:s.nbRetards+'/'+s.totalEmp+' emp. · '+pct(s.nbRetards,s.totalEmp)+'%',
+             col:'#fbbf24'},
+            {lbl:'Anomalies pointage', val:s.totalAbsDepart+s.totalAbsArrivee,
+             sub:s.nbAnomalies+'/'+s.totalEmp+' emp. · '+pct(s.nbAnomalies,s.totalEmp)+'%',
+             col:'#a78bfa'},
+            {lbl:'Sans pointage',      val:s.nbJamaisPointe,
+             sub:pct(s.nbJamaisPointe,s.totalEmp)+'% de l\'effectif',
+             col:'#fb923c'},
+          ].map(k=>`
+            <div class="ov-grp-stat">
+              <div class="ov-grp-val" style="color:${k.col}">${k.val}</div>
+              <div class="ov-grp-lbl">${k.lbl}</div>
+              <div class="ov-grp-sub">${k.sub}</div>
+              ${bar(parseInt(k.sub)||0,k.col)}
+            </div>`).join('')}
+        </div>
+        ${absBlock(s.absSlices, s.totalEmp)}
+      </div>
+    </div>`;
+
+  // Blocs par département
+  const deptHtml=s.deptList.map(d=>{
+    const col=DEPT_COLORS[d.dept]||'#94a3b8';
+    const eff=d.effectif||1;
+    return `<div class="ov-dept-card">
+      <div class="ov-dept-header">
+        <div class="ov-dept-name" style="color:${col}">${d.dept}</div>
+        <div class="ov-dept-eff">${eff} employé${eff>1?'s':''}</div>
+        <div class="ov-dept-taux" style="color:${d.taux>=80?'#34d399':d.taux>=60?'#fbbf24':'#f87171'}">${d.taux}%</div>
+      </div>
+      <div class="ov-dept-sep" style="background:${col}22"></div>
+
+      <!-- Métriques principales -->
+      <div class="ov-dept-metrics">
+        <div class="ov-dept-metric">
+          <div class="ov-dept-metric-val" style="color:#fbbf24">${d.retards}</div>
+          <div class="ov-dept-metric-lbl">Retards</div>
+          <div class="ov-dept-metric-sub">${d.nbRetards}/${eff} · ${pct(d.nbRetards,eff)}%</div>
+          ${sliceBar(d.nbRetards,eff,'#fbbf24')}
+        </div>
+        <div class="ov-dept-metric">
+          <div class="ov-dept-metric-val" style="color:#a78bfa">${d.absDepart+d.absArrivee}</div>
+          <div class="ov-dept-metric-lbl">Anomalies</div>
+          <div class="ov-dept-metric-sub">${d.nbAnomalies}/${eff} · ${pct(d.nbAnomalies,eff)}%</div>
+          ${sliceBar(d.nbAnomalies,eff,'#a78bfa')}
+        </div>
+      </div>
+
+      <!-- Tranches absences département -->
+      <div style="margin-top:14px">
+        ${absBlock(d.absSlices||{zero:0,s1_5:0,s6_10:0,s11plus:0}, eff, d.dept)}
       </div>
     </div>`;
   }).join('');
+
+  deptEl.innerHTML=grpHtml+deptHtml;
+
+  // Donut (discret)
+  destroyChart('donut');
+  const donutEl=document.getElementById('chartDonut');
+  if(donutEl){
+    const stColors={'Normal':'#34d399','Late':'#fbbf24','Early':'#60a5fa','Late/Early':'#fb923c','abs-total':'#f87171','abs-depart':'#a78bfa','abs-arrivee':'#fb923c'};
+    const stKeys=['Normal','Early','Late','Late/Early','abs-total','abs-depart','abs-arrivee'];
+    const stData=[s.stCounts['Normal']||0,s.stCounts['Early']||0,s.stCounts['Late']||0,s.stCounts['Late/Early']||0,s.totalAbsAucun,s.totalAbsDepart,s.totalAbsArrivee];
+    charts.donut=new Chart(donutEl,{
+      type:'doughnut',
+      data:{labels:stKeys,datasets:[{data:stData,backgroundColor:stKeys.map(k=>stColors[k]),borderWidth:0,hoverOffset:4}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'72%'}
+    });
+    const legendEl=document.getElementById('ovDonutLegend');
+    const stLbls={'Normal':'Normal','Early':'Anticipé','Late':'Retard','Late/Early':'Ret+Dép','abs-total':'Abs. totale','abs-depart':'Dép. manquant','abs-arrivee':'Arr. manquante'};
+    if(legendEl) legendEl.innerHTML=stKeys.filter((_,i)=>stData[i]>0).map((k,_,arr)=>`
+      <div class="ov-li">
+        <span style="width:8px;height:8px;border-radius:2px;background:${stColors[k]};flex-shrink:0;display:inline-block"></span>
+        <span style="color:#64748b">${stLbls[k]}</span>
+        <span style="color:#94a3b8;margin-left:auto">${stData[stKeys.indexOf(k)]}</span>
+      </div>`).join('');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -4337,6 +4786,97 @@ function parsePdfText(text){
   const seen=new Map();
   rows.forEach(r=>{ if(r.id&&r.date) seen.set(r.id+'|'+r.date,r); });
   return [...seen.values()];
+}
+
+
+// ── Modal liste absences complètes ────────────────────────────
+function showAbsList(dept, tranche){
+  const rows = getRows();
+  const s = computeStats(rows);
+  const joursOuvres = s.joursOuvres;
+
+  // Filtrer les employés selon dept et tranche
+  let emps = s.empList;
+  if(dept && dept !== 'all') emps = emps.filter(e=>e.dept===dept);
+
+  // Filtrer selon la tranche
+  if(tranche==='zero')   emps = emps.filter(e=>e.presents===0);
+  else if(tranche==='s1_5')  emps = emps.filter(e=>e.absAucun>=1 && e.absAucun<=5);
+  else if(tranche==='s6_10') emps = emps.filter(e=>e.absAucun>=6 && e.absAucun<=10);
+  else if(tranche==='s11plus') emps = emps.filter(e=>e.absAucun>=11);
+  else emps = emps.filter(e=>e.absAucun>0); // toutes absences
+
+  // Titre
+  const trancheLbls = {
+    zero:'Jamais pointé',
+    s1_5:'1 à 5 absences',
+    s6_10:'6 à 10 absences',
+    s11plus:'11 absences et plus',
+    all:'Toutes absences complètes'
+  };
+  const deptLbl = dept && dept!=='all' ? ` — ${dept}` : ' — Tous départements';
+  document.getElementById('modalAbsTitle').textContent =
+    (trancheLbls[tranche]||'Absences') + deptLbl + ` (${emps.length} employé${emps.length>1?'s':''})`;
+
+  if(!emps.length){
+    document.getElementById('modalAbsBody').innerHTML =
+      '<div style="text-align:center;padding:2rem;color:#475569">Aucun employé dans cette tranche</div>';
+    document.getElementById('modalAbsList').classList.add('open');
+    return;
+  }
+
+  // Trier par nb absences décroissant
+  emps = [...emps].sort((a,b)=>b.absAucun-a.absAucun);
+
+  const DEPT_COL = {AOE:'#60a5fa', GES:'#34d399', GA:'#fbbf24'};
+
+  document.getElementById('modalAbsBody').innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #1a1a2e">
+          <th style="padding:8px 10px;text-align:left;font-weight:600">Employé</th>
+          <th style="padding:8px 10px;text-align:center;font-weight:600">Dépt.</th>
+          <th style="padding:8px 10px;text-align:center;font-weight:600">Abs. complètes</th>
+          <th style="padding:8px 10px;text-align:center;font-weight:600">% du mois</th>
+          <th style="padding:8px 10px;text-align:center;font-weight:600">Présences</th>
+          <th style="padding:8px 10px;text-align:center;font-weight:600">Retards</th>
+          <th style="padding:8px 10px;text-align:center;font-weight:600">Anomalies</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${emps.map((e,i)=>{
+          const joursRef = e.joursOuvresEmp || joursOuvres;
+          const pctAbs = joursRef>0?Math.round(e.absAucun/joursRef*100):0;
+          const col = DEPT_COL[e.dept]||'#94a3b8';
+          const absCol = e.absAucun>=11?'#ef4444':e.absAucun>=6?'#f87171':e.absAucun>=1?'#fbbf24':'#fb923c';
+          return `<tr style="border-bottom:1px solid #0f0f18;${i%2===0?'background:#0a0a14':''}">
+            <td style="padding:10px 10px">
+              <div style="font-weight:600;font-size:13px;color:#e2e8f0">${e.name}</div>
+              <div style="font-size:10px;color:#475569">${e.id}</div>
+            </td>
+            <td style="padding:10px;text-align:center">
+              <span style="font-size:11px;font-weight:700;color:${col};background:${col}18;padding:2px 8px;border-radius:6px">${e.dept}</span>
+            </td>
+            <td style="padding:10px;text-align:center">
+              <span style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:${absCol}">${e.absAucun}</span>
+            </td>
+            <td style="padding:10px;text-align:center">
+              <div style="display:inline-flex;align-items:center;gap:6px">
+                <div style="width:50px;height:4px;background:#1a1a2e;border-radius:2px;overflow:hidden">
+                  <div style="height:100%;width:${pctAbs}%;background:${absCol};border-radius:2px"></div>
+                </div>
+                <span style="font-size:12px;color:#64748b">${pctAbs}%</span>
+              </div>
+            </td>
+            <td style="padding:10px;text-align:center;font-size:13px;color:${e.presents>0?'#34d399':'#475569'}">${e.presents}</td>
+            <td style="padding:10px;text-align:center;font-size:13px;color:${e.retards>0?'#fbbf24':'#475569'}">${e.retards||'—'}</td>
+            <td style="padding:10px;text-align:center;font-size:13px;color:${(e.absDepart+e.absArrivee)>0?'#a78bfa':'#475569'}">${(e.absDepart+e.absArrivee)||'—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+
+  document.getElementById('modalAbsList').classList.add('open');
 }
 
 // ══════════════════════════════════════════════════════════════
